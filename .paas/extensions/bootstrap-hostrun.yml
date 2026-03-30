@@ -1,0 +1,270 @@
+id: bootstrap-hostrun
+name: Bootstrap Host-Run Service
+description: Create system user, directories, systemd unit, cross-compile binary, upload, and start the host-run service
+
+inputs:
+  - name: bot_name
+    label: Bot name
+    type: text
+    default: hub-bot
+  - name: bot_url
+    label: Bot URL
+    type: text
+    required: true
+  - name: bot_profile_id
+    label: Immutable profile ID
+    type: text
+    default: tunnel-email-openai
+  - name: bot_display_name
+    label: Immutable profile display name
+    type: text
+    default: Tunnel chat + Yandex mail + OpenAI
+  - name: bot_http_bind
+    label: HTTP bind address
+    type: text
+    default: 127.0.0.1:5500
+  - name: bot_email_enabled
+    label: Enable email adapter capability
+    type: text
+    default: "true"
+  - name: bot_email_provider
+    label: Email provider
+    type: text
+    default: yandex
+  - name: bot_email_mode
+    label: Email adapter mode
+    type: text
+    default: scaffold
+  - name: bot_openai_enabled
+    label: Enable OpenAI capability
+    type: text
+    default: "true"
+  - name: ai_provider
+    label: AI provider
+    type: text
+    default: openai
+  - name: ai_api_key
+    label: AI API key
+    type: password
+    required: true
+  - name: ai_base_url
+    label: AI base URL
+    type: text
+    default: ""
+  - name: ai_model
+    label: AI model
+    type: text
+    default: gpt-4.1-mini
+  - name: ai_api_mode
+    label: AI API mode (chat_completions or responses)
+    type: text
+    default: chat_completions
+  - name: chat_history
+    label: Enable browser local chat history
+    type: text
+    default: "false"
+  - name: proxy_session_enabled
+    label: Enable proxy session UI and API
+    type: text
+    default: "false"
+  - name: proxy_session_force
+    label: Force AI/provider outbound through proxy session
+    type: text
+    default: "false"
+  - name: private_egress_required
+    label: Require private egress before provider requests
+    type: text
+    default: "true"
+  - name: private_egress_interface
+    label: Expected private egress interface name
+    type: text
+    default: wg0
+  - name: private_egress_test_host
+    label: Host or IP used to validate the private egress route
+    type: text
+    default: "10.88.0.1"
+  - name: private_egress_fail_closed
+    label: Block provider requests when private egress validation fails
+    type: text
+    default: "true"
+  - name: tag
+    label: Override tag (leave empty for git SHA)
+    type: text
+    default: ""
+
+steps:
+  - id: prepare_git_sha
+    run: |
+      set -eu
+      git rev-parse --short=12 HEAD
+    capture: git_sha
+    description: "Get git SHA"
+    local: true
+
+  - id: create_system_user
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      if id hubrelay >/dev/null 2>&1; then
+        echo "User hubrelay already exists (uid=$(id -u hubrelay))"
+      else
+        useradd --system --no-create-home --shell /usr/sbin/nologin hubrelay
+        echo "Created system user hubrelay (uid=$(id -u hubrelay))"
+      fi
+    description: "Create system user"
+
+  - id: prepare_directories
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      mkdir -p /opt/hubrelay /var/lib/hubrelay
+      chown hubrelay:hubrelay /opt/hubrelay /var/lib/hubrelay
+    description: "Create runtime directories"
+
+  - id: cross_compile
+    run: |
+      set -eu
+      LDFLAGS="-s -w"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentProfileID=${INPUT_BOT_PROFILE_ID}"
+      LDFLAGS="$LDFLAGS -X 'sshbot/internal/buildprofile.currentDisplayName=${INPUT_BOT_DISPLAY_NAME}'"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentHTTPBind=${INPUT_BOT_HTTP_BIND}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentEmailEnabled=${INPUT_BOT_EMAIL_ENABLED}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentEmailProvider=${INPUT_BOT_EMAIL_PROVIDER}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentEmailMode=${INPUT_BOT_EMAIL_MODE}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentOpenAIEnabled=${INPUT_BOT_OPENAI_ENABLED}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentAIProvider=${INPUT_AI_PROVIDER}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentAIAPIKey=${INPUT_AI_API_KEY}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentAIBaseURL=${INPUT_AI_BASE_URL}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentAIModel=${INPUT_AI_MODEL}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentAIAPIMode=${INPUT_AI_API_MODE}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentChatHistory=${INPUT_CHAT_HISTORY}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentProxySession=${INPUT_PROXY_SESSION_ENABLED}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentProxyForce=${INPUT_PROXY_SESSION_FORCE}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentPrivateEgressRequired=${INPUT_PRIVATE_EGRESS_REQUIRED}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentPrivateEgressInterface=${INPUT_PRIVATE_EGRESS_INTERFACE}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentPrivateEgressTestHost=${INPUT_PRIVATE_EGRESS_TEST_HOST}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentPrivateEgressFailClosed=${INPUT_PRIVATE_EGRESS_FAIL_CLOSED}"
+      CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" -o bot-linux-amd64 ./cmd/bot
+      ls -lh bot-linux-amd64
+    description: "Cross-compile binary for linux/amd64"
+    local: true
+
+  - id: upload_binary
+    run: |
+      set -eu
+      scp bot-linux-amd64 ${SERVER_USER}@${SERVER_HOST}:/opt/hubrelay/bot.new
+      ssh ${SERVER_USER}@${SERVER_HOST} "chmod 755 /opt/hubrelay/bot.new && chown hubrelay:hubrelay /opt/hubrelay/bot.new && mv /opt/hubrelay/bot.new /opt/hubrelay/bot"
+    description: "Upload binary to server"
+    local: true
+
+  - id: render_env_file
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      cat > /opt/hubrelay/env <<ENVEOF
+      INPUT_AI_API_KEY=${INPUT_AI_API_KEY}
+      INPUT_AI_BASE_URL=${INPUT_AI_BASE_URL}
+      INPUT_AI_MODEL=${INPUT_AI_MODEL}
+      INPUT_AI_PROVIDER=${INPUT_AI_PROVIDER}
+      INPUT_AI_API_MODE=${INPUT_AI_API_MODE}
+      INPUT_CHAT_HISTORY=${INPUT_CHAT_HISTORY}
+      INPUT_PROXY_SESSION_ENABLED=${INPUT_PROXY_SESSION_ENABLED}
+      INPUT_PROXY_SESSION_FORCE=${INPUT_PROXY_SESSION_FORCE}
+      INPUT_PRIVATE_EGRESS_REQUIRED=${INPUT_PRIVATE_EGRESS_REQUIRED}
+      INPUT_PRIVATE_EGRESS_INTERFACE=${INPUT_PRIVATE_EGRESS_INTERFACE}
+      INPUT_PRIVATE_EGRESS_TEST_HOST=${INPUT_PRIVATE_EGRESS_TEST_HOST}
+      INPUT_PRIVATE_EGRESS_FAIL_CLOSED=${INPUT_PRIVATE_EGRESS_FAIL_CLOSED}
+      ENVEOF
+      sed -i 's/^[[:space:]]*//' /opt/hubrelay/env
+      chmod 600 /opt/hubrelay/env
+      chown hubrelay:hubrelay /opt/hubrelay/env
+    description: "Render environment file"
+
+  - id: install_systemd_unit
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      cat > /etc/systemd/system/hubrelay.service <<'UNIT'
+      [Unit]
+      Description=HubRelay host-run service
+      After=network-online.target wg-quick@wg0.service
+      Wants=network-online.target wg-quick@wg0.service
+      Requires=wg-quick@wg0.service
+
+      [Service]
+      User=hubrelay
+      Group=hubrelay
+      WorkingDirectory=/opt/hubrelay
+      Environment=BOT_DB_FILE=/var/lib/hubrelay/bot.db
+      EnvironmentFile=/opt/hubrelay/env
+      ExecStart=/opt/hubrelay/bot
+      Restart=always
+      RestartSec=3
+      NoNewPrivileges=yes
+      PrivateTmp=yes
+      ProtectHome=yes
+      ProtectSystem=full
+
+      [Install]
+      WantedBy=multi-user.target
+      UNIT
+      sed -i 's/^[[:space:]]*//' /etc/systemd/system/hubrelay.service
+      systemctl daemon-reload
+    description: "Install systemd unit"
+
+  - id: start_service
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      systemctl enable hubrelay.service
+      systemctl start hubrelay.service
+    description: "Enable and start service"
+
+  - id: verify_bot_health
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        if curl --fail --show-error --silent \
+          "${INPUT_BOT_URL}/healthz" >/dev/null; then
+          exit 0
+        fi
+        sleep 5
+      done
+      echo "Bot did not become ready at ${INPUT_BOT_URL}"
+      exit 1
+    description: "Verify bot health"
+
+  - id: smoke_test_command
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      curl --fail --show-error --silent \
+        -X POST "${INPUT_BOT_URL}/api/command" \
+        -H 'Content-Type: application/json' \
+        --data '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}' >/dev/null
+    description: "Run capabilities smoke command"
+
+  - id: print_runtime_info
+    run: |
+      set -eu
+      echo "Binary: /opt/hubrelay/bot (sha: ${STEP_GIT_SHA})"
+      echo "Service: hubrelay.service (host-run)"
+      echo "URL: ${INPUT_BOT_URL}"
+      echo "SSH tunnel: ssh -L 5500:127.0.0.1:5500 root@${SERVER_HOST}"
+    description: "Print runtime information"
+    local: true
+
+  - id: cleanup_local
+    run: |
+      rm -f bot-linux-amd64
+    description: "Clean up local build artifact"
+    local: true
+    ignore_error: true

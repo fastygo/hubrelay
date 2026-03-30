@@ -7,7 +7,7 @@ services:
       args:
         BOT_PROFILE_ID: ${BOT_PROFILE_ID:-tunnel-email-openai}
         BOT_DISPLAY_NAME: ${BOT_DISPLAY_NAME:-Tunnel chat + Yandex mail + OpenAI}
-        BOT_HTTP_BIND: ${BOT_HTTP_BIND:-127.0.0.1:5500}
+        BOT_HTTP_BIND: ${BOT_HTTP_BIND:-0.0.0.0:5500}
         BOT_EMAIL_ENABLED: ${BOT_EMAIL_ENABLED:-true}
         BOT_EMAIL_PROVIDER: ${BOT_EMAIL_PROVIDER:-yandex}
         BOT_EMAIL_MODE: ${BOT_EMAIL_MODE:-scaffold}
@@ -20,6 +20,10 @@ services:
         CHAT_HISTORY: ${CHAT_HISTORY:-false}
         PROXY_SESSION_ENABLED: ${PROXY_SESSION_ENABLED:-true}
         PROXY_SESSION_FORCE: ${PROXY_SESSION_FORCE:-true}
+        PRIVATE_EGRESS_REQUIRED: ${PRIVATE_EGRESS_REQUIRED:-false}
+        PRIVATE_EGRESS_INTERFACE: ${PRIVATE_EGRESS_INTERFACE:-}
+        PRIVATE_EGRESS_TEST_HOST: ${PRIVATE_EGRESS_TEST_HOST:-}
+        PRIVATE_EGRESS_FAIL_CLOSED: ${PRIVATE_EGRESS_FAIL_CLOSED:-false}
     read_only: true
     tmpfs:
       - /tmp:size=8m

@@ -45,14 +45,22 @@ type ProxySessionConfig struct {
 	Force   bool
 }
 
+type PrivateEgressConfig struct {
+	Required   bool
+	Interface  string
+	TestHost   string
+	FailClosed bool
+}
+
 type Profile struct {
-	ID           string
-	DisplayName  string
-	Capabilities []Capability
-	HTTPChat     HTTPChatConfig
-	Email        EmailConfig
-	OpenAI       OpenAIConfig
-	ProxySession ProxySessionConfig
+	ID            string
+	DisplayName   string
+	Capabilities  []Capability
+	HTTPChat      HTTPChatConfig
+	Email         EmailConfig
+	OpenAI        OpenAIConfig
+	ProxySession  ProxySessionConfig
+	PrivateEgress PrivateEgressConfig
 }
 
 var (
@@ -71,6 +79,10 @@ var (
 	currentChatHistory   = "false"
 	currentProxySession  = "true"
 	currentProxyForce    = "true"
+	currentPrivateEgressRequired   = "false"
+	currentPrivateEgressInterface  = ""
+	currentPrivateEgressTestHost   = ""
+	currentPrivateEgressFailClosed = "false"
 )
 
 func (p Profile) Has(capability Capability) bool {
@@ -136,6 +148,12 @@ func Current() Profile {
 			Enabled: isTruthy(currentProxySession),
 			Force:   isTruthy(currentProxyForce),
 		},
+		PrivateEgress: PrivateEgressConfig{
+			Required:   isTruthy(currentPrivateEgressRequired),
+			Interface:  strings.TrimSpace(currentPrivateEgressInterface),
+			TestHost:   strings.TrimSpace(currentPrivateEgressTestHost),
+			FailClosed: isTruthy(currentPrivateEgressFailClosed),
+		},
 	}
 }
 
@@ -157,6 +175,10 @@ func applyEnvOverrides() {
 		envOverrideAlways(&currentProxyForce, "INPUT_PROXY_SESSION_FORCE")
 		envOverrideAlways(&currentProxySession, "INPUT_PROXY_SESSION_ENABLED")
 		envOverrideAlways(&currentChatHistory, "INPUT_CHAT_HISTORY")
+		envOverrideAlways(&currentPrivateEgressRequired, "INPUT_PRIVATE_EGRESS_REQUIRED")
+		envOverrideAlways(&currentPrivateEgressInterface, "INPUT_PRIVATE_EGRESS_INTERFACE")
+		envOverrideAlways(&currentPrivateEgressTestHost, "INPUT_PRIVATE_EGRESS_TEST_HOST")
+		envOverrideAlways(&currentPrivateEgressFailClosed, "INPUT_PRIVATE_EGRESS_FAIL_CLOSED")
 	})
 }
 

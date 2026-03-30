@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"sshbot/internal/ai"
+	"sshbot/internal/buildprofile"
 	"sshbot/internal/outbound"
 )
 
@@ -48,6 +49,8 @@ func main() {
 		config.Model,
 		config.APIMode,
 		outbound.Policy{RequireProxy: false},
+		buildprofile.PrivateEgressConfig{},
+		nil,
 		nil,
 	)
 	if err != nil {

@@ -17,6 +17,13 @@ Short-form architecture notes, ADRs, and profile sketches. They stay **technolog
 | [profiles/tunnel-email-openai.md](profiles/tunnel-email-openai.md) | Default deploy profile |
 | [adr/](adr/) | Architecture decision records |
 
+## WireGuard + HubRelay (deep dive)
+
+| Document | Topic |
+| --- | --- |
+| [wg/HUBRELAY_SYSTEM_GUIDE.md](wg/HUBRELAY_SYSTEM_GUIDE.md) | Binary, `INPUT_*` profile, private egress checks, kernel routing |
+| [wg/README.md](wg/README.md) | SRE runbook: Marvin/Jarvis, checks, failures |
+
 ## Canonical operator docs
 
 End-to-end English guides (installation through deploy) live in [`../docs`](../docs/README.md).

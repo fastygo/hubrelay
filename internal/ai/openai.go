@@ -17,6 +17,7 @@ import (
 	"github.com/openai/openai-go/v3/responses"
 	"github.com/openai/openai-go/v3/shared"
 
+	"sshbot/internal/buildprofile"
 	"sshbot/internal/outbound"
 	proxymgr "sshbot/internal/proxy"
 )
@@ -29,10 +30,12 @@ type OpenAICompatibleProvider struct {
 	apiMode      string
 	timeout      time.Duration
 	policy       outbound.Policy
+	privateEgress buildprofile.PrivateEgressConfig
+	privateEgressChecker outbound.PrivateEgressChecker
 	proxyManager *proxymgr.Manager
 }
 
-func NewOpenAICompatibleProvider(name, apiKey, baseURL, model, apiMode string, policy outbound.Policy, proxyManager *proxymgr.Manager) (*OpenAICompatibleProvider, error) {
+func NewOpenAICompatibleProvider(name, apiKey, baseURL, model, apiMode string, policy outbound.Policy, privateEgress buildprofile.PrivateEgressConfig, privateEgressChecker outbound.PrivateEgressChecker, proxyManager *proxymgr.Manager) (*OpenAICompatibleProvider, error) {
 	if strings.TrimSpace(apiKey) == "" {
 		return nil, errors.New("ai api key is required")
 	}
@@ -53,6 +56,8 @@ func NewOpenAICompatibleProvider(name, apiKey, baseURL, model, apiMode string, p
 		apiMode:      normalizeAPIMode(apiMode),
 		timeout:      60 * time.Second,
 		policy:       policy,
+		privateEgress: privateEgress,
+		privateEgressChecker: privateEgressChecker,
 		proxyManager: proxyManager,
 	}, nil
 }
@@ -65,6 +70,11 @@ func (p *OpenAICompatibleProvider) Ask(ctx context.Context, request AskRequest) 
 	model := strings.TrimSpace(request.Model)
 	if model == "" {
 		model = p.model
+	}
+	if p.privateEgress.Required {
+		if err := p.requirePrivateEgress(ctx); err != nil {
+			return AskResponse{}, err
+		}
 	}
 
 	proxySessionID := strings.TrimSpace(request.ProxySessionID)
@@ -82,6 +92,22 @@ func (p *OpenAICompatibleProvider) Ask(ctx context.Context, request AskRequest) 
 		}
 	}
 	return response, err
+}
+
+func (p *OpenAICompatibleProvider) requirePrivateEgress(ctx context.Context) error {
+	if p.privateEgressChecker == nil {
+		if p.privateEgress.FailClosed {
+			return errors.New("private egress checker is not configured")
+		}
+		return nil
+	}
+	if err := p.privateEgressChecker.Check(ctx, p.privateEgress.Interface, p.privateEgress.TestHost); err != nil {
+		if p.privateEgress.FailClosed {
+			return err
+		}
+		log.Printf("[ai] private egress validation failed but continuing: %v", err)
+	}
+	return nil
 }
 
 func (p *OpenAICompatibleProvider) askOnce(ctx context.Context, request AskRequest, model, proxyAddress string) (AskResponse, error) {

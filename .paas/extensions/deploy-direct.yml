@@ -22,7 +22,7 @@ inputs:
   - name: bot_http_bind
     label: HTTP bind address compiled into the image
     type: text
-    default: 127.0.0.1:5500
+    default: 0.0.0.0:5500
   - name: bot_email_enabled
     label: Enable email adapter capability
     type: text
@@ -71,6 +71,22 @@ inputs:
     label: Force AI/provider outbound through proxy session
     type: text
     default: "true"
+  - name: private_egress_required
+    label: Require private egress before provider requests
+    type: text
+    default: "false"
+  - name: private_egress_interface
+    label: Expected private egress interface name
+    type: text
+    default: ""
+  - name: private_egress_test_host
+    label: Host or IP used to validate the private egress route
+    type: text
+    default: ""
+  - name: private_egress_fail_closed
+    label: Block provider requests when private egress validation fails
+    type: text
+    default: "false"
   - name: tag
     label: Override local image tag (leave empty for git SHA)
     type: text
@@ -134,6 +150,10 @@ steps:
         --build-arg CHAT_HISTORY="${INPUT_CHAT_HISTORY}" \
         --build-arg PROXY_SESSION_ENABLED="${INPUT_PROXY_SESSION_ENABLED}" \
         --build-arg PROXY_SESSION_FORCE="${INPUT_PROXY_SESSION_FORCE}" \
+        --build-arg PRIVATE_EGRESS_REQUIRED="${INPUT_PRIVATE_EGRESS_REQUIRED}" \
+        --build-arg PRIVATE_EGRESS_INTERFACE="${INPUT_PRIVATE_EGRESS_INTERFACE}" \
+        --build-arg PRIVATE_EGRESS_TEST_HOST="${INPUT_PRIVATE_EGRESS_TEST_HOST}" \
+        --build-arg PRIVATE_EGRESS_FAIL_CLOSED="${INPUT_PRIVATE_EGRESS_FAIL_CLOSED}" \
         -t "${STEP_IMAGE_REF}:${STEP_IMAGE_TAG}" \
         -t "${STEP_IMAGE_REF}:main" \
         .
@@ -169,6 +189,10 @@ steps:
       CHAT_HISTORY="${INPUT_CHAT_HISTORY}" \
       PROXY_SESSION_ENABLED="${INPUT_PROXY_SESSION_ENABLED}" \
       PROXY_SESSION_FORCE="${INPUT_PROXY_SESSION_FORCE}" \
+      PRIVATE_EGRESS_REQUIRED="${INPUT_PRIVATE_EGRESS_REQUIRED}" \
+      PRIVATE_EGRESS_INTERFACE="${INPUT_PRIVATE_EGRESS_INTERFACE}" \
+      PRIVATE_EGRESS_TEST_HOST="${INPUT_PRIVATE_EGRESS_TEST_HOST}" \
+      PRIVATE_EGRESS_FAIL_CLOSED="${INPUT_PRIVATE_EGRESS_FAIL_CLOSED}" \
       docker compose -f docker-compose.yml config > "/opt/${INPUT_BOT_NAME}/docker-compose.yml"
       echo "Rendered runtime compose:"
       sed -n '1,20p' "/opt/${INPUT_BOT_NAME}/docker-compose.yml"

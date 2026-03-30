@@ -55,6 +55,7 @@ func main() {
 	if profile.ProxySession.Enabled && profile.OpenAI.Enabled && profile.OpenAI.HasAPIKey {
 		proxyManager = proxymgr.NewManager(ai.NewOpenAIProxyProber(profile.OpenAI.APIKey, profile.OpenAI.BaseURL, 12*time.Second))
 	}
+	privateEgressChecker := outbound.NewInterfaceEgressChecker()
 
 	plugins := systeminfo.Builtins()
 	if profile.OpenAI.Enabled && profile.OpenAI.HasAPIKey {
@@ -65,6 +66,8 @@ func main() {
 			profile.OpenAI.Model,
 			profile.OpenAI.APIMode,
 			outbound.Policy{RequireProxy: profile.ProxySession.Force},
+			profile.PrivateEgress,
+			privateEgressChecker,
 			proxyManager,
 		)
 		if providerErr != nil {
