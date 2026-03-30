@@ -1,0 +1,218 @@
+id: deploy-direct
+name: Direct Update Hub Bot
+description: Upload source via SSH, build the hub bot image on the server without a registry, and update the internal-only runtime
+
+inputs:
+  - name: bot_name
+    label: Bot name
+    type: text
+    default: hub-bot
+  - name: bot_url
+    label: Bot URL
+    type: text
+    required: true
+  - name: bot_profile_id
+    label: Immutable profile ID
+    type: text
+    default: tunnel-email-openai
+  - name: bot_display_name
+    label: Immutable profile display name
+    type: text
+    default: Tunnel chat + Yandex mail + OpenAI
+  - name: bot_http_bind
+    label: HTTP bind address compiled into the image
+    type: text
+    default: 127.0.0.1:5500
+  - name: bot_email_enabled
+    label: Enable email adapter capability
+    type: text
+    default: "true"
+  - name: bot_email_provider
+    label: Email provider
+    type: text
+    default: yandex
+  - name: bot_email_mode
+    label: Email adapter mode
+    type: text
+    default: scaffold
+  - name: bot_openai_enabled
+    label: Enable OpenAI capability
+    type: text
+    default: "true"
+  - name: ai_provider
+    label: AI provider
+    type: text
+    default: openai
+  - name: ai_api_key
+    label: AI API key
+    type: password
+    required: true
+  - name: ai_base_url
+    label: AI base URL
+    type: text
+    default: ""
+  - name: ai_model
+    label: AI model
+    type: text
+    default: gpt-4.1-mini
+  - name: ai_api_mode
+    label: AI API mode (chat_completions or responses)
+    type: text
+    default: chat_completions
+  - name: chat_history
+    label: Enable browser local chat history
+    type: text
+    default: "false"
+  - name: proxy_session_enabled
+    label: Enable proxy session UI and API
+    type: text
+    default: "true"
+  - name: proxy_session_force
+    label: Force AI/provider outbound through proxy session
+    type: text
+    default: "true"
+  - name: tag
+    label: Override local image tag (leave empty for git SHA)
+    type: text
+    default: ""
+
+steps:
+  - id: prepare_git_sha
+    run: |
+      set -eu
+      git rev-parse --short=12 HEAD
+    capture: git_sha
+    description: "Get git SHA"
+    local: true
+
+  - id: prepare_image_tag
+    run: |
+      set -eu
+      if [ -n "${INPUT_TAG}" ]; then
+        echo "${INPUT_TAG}"
+      else
+        echo "sha-${STEP_GIT_SHA}"
+      fi
+    capture: image_tag
+    description: "Choose local image tag"
+    local: true
+
+  - id: prepare_image_ref
+    run: |
+      set -eu
+      echo "${INPUT_BOT_NAME}"
+    capture: image_ref
+    description: "Build local image reference"
+    local: true
+
+  - id: upload_source
+    run: |
+      set -eu
+      git archive --format=tar HEAD | ssh ${SERVER_USER}@${SERVER_HOST} "mkdir -p /tmp/build-${INPUT_BOT_NAME} && tar -xf - -C /tmp/build-${INPUT_BOT_NAME}"
+    description: "Upload source to server"
+    local: true
+
+  - id: build_image
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      cd /tmp/build-${INPUT_BOT_NAME}
+      docker build \
+        --build-arg BOT_PROFILE_ID="${INPUT_BOT_PROFILE_ID}" \
+        --build-arg BOT_DISPLAY_NAME="${INPUT_BOT_DISPLAY_NAME}" \
+        --build-arg BOT_HTTP_BIND="${INPUT_BOT_HTTP_BIND}" \
+        --build-arg BOT_EMAIL_ENABLED="${INPUT_BOT_EMAIL_ENABLED}" \
+        --build-arg BOT_EMAIL_PROVIDER="${INPUT_BOT_EMAIL_PROVIDER}" \
+        --build-arg BOT_EMAIL_MODE="${INPUT_BOT_EMAIL_MODE}" \
+        --build-arg BOT_OPENAI_ENABLED="${INPUT_BOT_OPENAI_ENABLED}" \
+        --build-arg AI_PROVIDER="${INPUT_AI_PROVIDER}" \
+        --build-arg AI_API_KEY="${INPUT_AI_API_KEY}" \
+        --build-arg AI_BASE_URL="${INPUT_AI_BASE_URL}" \
+        --build-arg AI_MODEL="${INPUT_AI_MODEL}" \
+        --build-arg AI_API_MODE="${INPUT_AI_API_MODE}" \
+        --build-arg CHAT_HISTORY="${INPUT_CHAT_HISTORY}" \
+        --build-arg PROXY_SESSION_ENABLED="${INPUT_PROXY_SESSION_ENABLED}" \
+        --build-arg PROXY_SESSION_FORCE="${INPUT_PROXY_SESSION_FORCE}" \
+        -t "${STEP_IMAGE_REF}:${STEP_IMAGE_TAG}" \
+        -t "${STEP_IMAGE_REF}:main" \
+        .
+    description: "Build bot image on server"
+
+  - id: prepare_runtime_dir
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      mkdir -p "/opt/${INPUT_BOT_NAME}"
+    description: "Prepare runtime directory"
+
+  - id: render_runtime_compose
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      cd /tmp/build-${INPUT_BOT_NAME}
+      APP_IMAGE="${STEP_IMAGE_REF}:${STEP_IMAGE_TAG}" \
+      BOT_PROFILE_ID="${INPUT_BOT_PROFILE_ID}" \
+      BOT_DISPLAY_NAME="${INPUT_BOT_DISPLAY_NAME}" \
+      BOT_HTTP_BIND="${INPUT_BOT_HTTP_BIND}" \
+      BOT_EMAIL_ENABLED="${INPUT_BOT_EMAIL_ENABLED}" \
+      BOT_EMAIL_PROVIDER="${INPUT_BOT_EMAIL_PROVIDER}" \
+      BOT_EMAIL_MODE="${INPUT_BOT_EMAIL_MODE}" \
+      BOT_OPENAI_ENABLED="${INPUT_BOT_OPENAI_ENABLED}" \
+      AI_PROVIDER="${INPUT_AI_PROVIDER}" \
+      AI_API_KEY="${INPUT_AI_API_KEY}" \
+      AI_BASE_URL="${INPUT_AI_BASE_URL}" \
+      AI_MODEL="${INPUT_AI_MODEL}" \
+      AI_API_MODE="${INPUT_AI_API_MODE}" \
+      CHAT_HISTORY="${INPUT_CHAT_HISTORY}" \
+      PROXY_SESSION_ENABLED="${INPUT_PROXY_SESSION_ENABLED}" \
+      PROXY_SESSION_FORCE="${INPUT_PROXY_SESSION_FORCE}" \
+      docker compose -f docker-compose.yml config > "/opt/${INPUT_BOT_NAME}/docker-compose.yml"
+      echo "Rendered runtime compose:"
+      sed -n '1,20p' "/opt/${INPUT_BOT_NAME}/docker-compose.yml"
+    description: "Render runtime compose"
+
+  - id: start_bot
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      docker compose -p "${INPUT_BOT_NAME}" -f "/opt/${INPUT_BOT_NAME}/docker-compose.yml" up -d --remove-orphans
+    description: "Update bot runtime"
+
+  - id: verify_bot_health
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        if curl --fail --show-error --silent \
+          "${INPUT_BOT_URL}/healthz" >/dev/null; then
+          exit 0
+        fi
+        sleep 5
+      done
+      echo "Bot did not become ready at ${INPUT_BOT_URL}"
+      exit 1
+    description: "Verify bot health"
+
+  - id: smoke_test_command
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      curl --fail --show-error --silent \
+        -X POST "${INPUT_BOT_URL}/api/command" \
+        -H 'Content-Type: application/json' \
+        --data '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}' >/dev/null
+    description: "Run capabilities smoke command"
+
+  - id: cleanup
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      rm -rf /tmp/build-${INPUT_BOT_NAME}
+    description: "Clean up build directory"
+    ignore_error: true

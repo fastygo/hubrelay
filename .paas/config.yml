@@ -1,0 +1,24 @@
+server: production
+
+defaults:
+  INPUT_BOT_NAME: hub-bot
+  INPUT_REGISTRY_HOST: your.registry.host.com
+  INPUT_IMAGE_REPOSITORY: your/repository
+  INPUT_BOT_URL: http://127.0.0.1:5500
+  INPUT_BOT_PROFILE_ID: tunnel-email-openai
+  INPUT_BOT_DISPLAY_NAME: Tunnel chat + Yandex mail + OpenAI
+  INPUT_BOT_HTTP_BIND: 0.0.0.0:5500
+  INPUT_BOT_EMAIL_ENABLED: "true"
+  INPUT_BOT_EMAIL_PROVIDER: yandex
+  INPUT_BOT_EMAIL_MODE: scaffold
+  INPUT_BOT_OPENAI_ENABLED: "true"
+  INPUT_AI_PROVIDER: your-provider
+  INPUT_AI_BASE_URL: "https://api.your-provider.com/v1"
+  INPUT_AI_MODEL: your-model
+  INPUT_AI_API_MODE: chat_completions
+  INPUT_CHAT_HISTORY: "false"
+  INPUT_PROXY_SESSION_ENABLED: "true"
+  INPUT_PROXY_SESSION_FORCE: "true"
+  # INPUT_TAG: ""
+
+extensions_dir: .paas/extensions
