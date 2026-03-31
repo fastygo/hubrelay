@@ -62,115 +62,44 @@ func (streamPlugin) ExecuteStream(_ context.Context, _ core.CommandContext, _ co
 	return nil
 }
 
-func TestHandleIndexRendersChatControls(t *testing.T) {
-	profile := buildprofile.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test",
-		Capabilities: []buildprofile.Capability{
-			buildprofile.CapabilityAdapterHTTPChat,
-			buildprofile.CapabilityAIChat,
-		},
-		HTTPChat: buildprofile.HTTPChatConfig{
-			Enabled:     true,
-			BindAddress: "127.0.0.1:5500",
-		},
-		OpenAI: buildprofile.OpenAIConfig{
-			Enabled:     true,
-			Provider:    "openai",
-			Model:       "gpt-4.1-mini",
-			ChatHistory: true,
-			HasAPIKey:   true,
-		},
-		ProxySession: buildprofile.ProxySessionConfig{
-			Enabled: true,
-			Force:   true,
-		},
-	}
-
-	service, err := core.NewService(profile, testStore{}, nil)
+func newTestAdapter(t *testing.T, profile buildprofile.Profile, plugins []core.Plugin, proxy *proxymgr.Manager) *Adapter {
+	t.Helper()
+	service, err := core.NewService(profile, testStore{}, plugins)
 	if err != nil {
 		t.Fatalf("NewService() error = %v", err)
 	}
-
-	adapter := New("127.0.0.1:5500", service, nil)
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("GET", "/", nil)
-
-	adapter.handleIndex(recorder, request)
-
-	body := recorder.Body.String()
-	if !strings.Contains(body, "MVP Chat") {
-		t.Fatalf("expected MVP Chat block in HTML")
-	}
-	if !strings.Contains(body, "Export chat JSON") {
-		t.Fatalf("expected export button in HTML")
-	}
-	if !strings.Contains(body, "chatHistory: true") {
-		t.Fatalf("expected chat history config in HTML")
-	}
-	if !strings.Contains(body, "proxyEnabled: false") {
-		t.Fatalf("expected proxy feature to stay disabled without runtime manager")
-	}
+	return New("127.0.0.1:5500", service, proxy)
 }
 
-func TestHandleIndexRendersProxyControlsWhenEnabled(t *testing.T) {
-	manager := proxymgr.NewManager(func(_ context.Context, _ string) (time.Duration, error) {
-		return 10 * time.Millisecond, nil
-	})
-
-	profile := buildprofile.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test",
-		Capabilities: []buildprofile.Capability{
-			buildprofile.CapabilityAdapterHTTPChat,
-			buildprofile.CapabilityAIChat,
-			buildprofile.CapabilityProxySession,
-		},
+func TestRootRouteReturnsDiscoveryJSON(t *testing.T) {
+	adapter := newTestAdapter(t, buildprofile.Profile{
+		ID: "test-profile",
 		HTTPChat: buildprofile.HTTPChatConfig{
 			Enabled:     true,
 			BindAddress: "127.0.0.1:5500",
 		},
-		OpenAI: buildprofile.OpenAIConfig{
-			Enabled:   true,
-			Provider:  "openai",
-			Model:     "gpt-4.1-mini",
-			HasAPIKey: true,
-		},
-		ProxySession: buildprofile.ProxySessionConfig{
-			Enabled: true,
-			Force:   true,
-		},
-	}
+	}, nil, nil)
 
-	service, err := core.NewService(profile, testStore{}, nil)
-	if err != nil {
-		t.Fatalf("NewService() error = %v", err)
-	}
-
-	adapter := New("127.0.0.1:5500", service, manager)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("GET", "/", nil)
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	adapter.buildMux().ServeHTTP(recorder, request)
 
-	adapter.handleIndex(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+	if contentType := recorder.Header().Get("Content-Type"); !strings.Contains(contentType, "application/json") {
+		t.Fatalf("expected JSON discovery response, got %q", contentType)
+	}
+	if strings.Contains(recorder.Body.String(), "<html") {
+		t.Fatalf("expected no HTML in discovery response, got %s", recorder.Body.String())
+	}
 
-	body := recorder.Body.String()
-	if !strings.Contains(body, "Configure Proxy Session") {
-		t.Fatalf("expected proxy modal entry point in HTML")
+	var payload map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
 	}
-	if !strings.Contains(body, "sessionStorage") {
-		t.Fatalf("expected browser sessionStorage mention in HTML")
-	}
-	if !strings.Contains(body, "proxyEnabled: true") {
-		t.Fatalf("expected proxy feature to be enabled in page config")
-	}
-	if !strings.Contains(body, "proxyForced: true") {
-		t.Fatalf("expected forced proxy config in page")
-	}
-	if !strings.Contains(body, "Review Sensitive Data") {
-		t.Fatalf("expected sensitive data warning dialog in HTML")
-	}
-	if !strings.Contains(body, "scanSensitiveInput") {
-		t.Fatalf("expected sensitive data scanner hook in HTML")
+	if payload["service"] != "hubrelay" || payload["profile"] != "test-profile" || payload["status"] != "ok" {
+		t.Fatalf("unexpected discovery payload %+v", payload)
 	}
 }
 
@@ -182,9 +111,8 @@ func TestProxySessionAPIFlow(t *testing.T) {
 		return 40 * time.Millisecond, nil
 	})
 
-	profile := buildprofile.Profile{
-		ID:          "test-profile",
-		DisplayName: "Test",
+	adapter := newTestAdapter(t, buildprofile.Profile{
+		ID: "test-profile",
 		Capabilities: []buildprofile.Capability{
 			buildprofile.CapabilityAdapterHTTPChat,
 			buildprofile.CapabilityAIChat,
@@ -203,20 +131,15 @@ func TestProxySessionAPIFlow(t *testing.T) {
 		ProxySession: buildprofile.ProxySessionConfig{
 			Enabled: true,
 		},
-	}
+	}, nil, manager)
 
-	service, err := core.NewService(profile, testStore{}, nil)
-	if err != nil {
-		t.Fatalf("NewService() error = %v", err)
-	}
-
-	adapter := New("127.0.0.1:5500", service, manager)
+	mux := adapter.buildMux()
 
 	createBody := bytes.NewBufferString(`{"principal_id":"operator-local","proxies":"10.0.0.1:1080\n10.0.0.2:1080"}`)
 	createRecorder := httptest.NewRecorder()
-	createRequest := httptest.NewRequest("POST", "/api/proxy/session", createBody)
-	adapter.handleProxyCollection(createRecorder, createRequest)
-	if createRecorder.Code != 201 {
+	createRequest := httptest.NewRequest(http.MethodPost, "/api/proxy/session", createBody)
+	mux.ServeHTTP(createRecorder, createRequest)
+	if createRecorder.Code != http.StatusCreated {
 		t.Fatalf("unexpected create status %d: %s", createRecorder.Code, createRecorder.Body.String())
 	}
 
@@ -233,49 +156,33 @@ func TestProxySessionAPIFlow(t *testing.T) {
 	}
 
 	checkRecorder := httptest.NewRecorder()
-	checkRequest := httptest.NewRequest("POST", "/api/proxy/session/"+created.Session.ID+"/check", nil)
-	adapter.handleProxySession(checkRecorder, checkRequest)
-	if checkRecorder.Code != 200 {
+	checkRequest := httptest.NewRequest(http.MethodPost, "/api/proxy/session/"+created.Session.ID+"/check", nil)
+	mux.ServeHTTP(checkRecorder, checkRequest)
+	if checkRecorder.Code != http.StatusOK {
 		t.Fatalf("unexpected check status %d: %s", checkRecorder.Code, checkRecorder.Body.String())
 	}
 
 	selectBody := bytes.NewBufferString(`{"proxy":"fastest"}`)
 	selectRecorder := httptest.NewRecorder()
-	selectRequest := httptest.NewRequest("POST", "/api/proxy/session/"+created.Session.ID+"/select", selectBody)
-	adapter.handleProxySession(selectRecorder, selectRequest)
-	if selectRecorder.Code != 200 {
+	selectRequest := httptest.NewRequest(http.MethodPost, "/api/proxy/session/"+created.Session.ID+"/select", selectBody)
+	mux.ServeHTTP(selectRecorder, selectRequest)
+	if selectRecorder.Code != http.StatusOK {
 		t.Fatalf("unexpected select status %d: %s", selectRecorder.Code, selectRecorder.Body.String())
 	}
 	if !strings.Contains(selectRecorder.Body.String(), `"selected_proxy":"10.0.0.2:1080"`) {
 		t.Fatalf("expected fastest proxy to become active, got %s", selectRecorder.Body.String())
 	}
-
-	getRecorder := httptest.NewRecorder()
-	getRequest := httptest.NewRequest("GET", "/api/proxy/session/"+created.Session.ID, nil)
-	adapter.handleProxySession(getRecorder, getRequest)
-	if getRecorder.Code != 200 {
-		t.Fatalf("unexpected get status %d: %s", getRecorder.Code, getRecorder.Body.String())
-	}
-	if !strings.Contains(getRecorder.Body.String(), `"address":"10.0.0.2:1080"`) {
-		t.Fatalf("expected active lease in get response, got %s", getRecorder.Body.String())
-	}
 }
 
 func TestBuildMuxAvoidsRouteConflicts(t *testing.T) {
-	profile := buildprofile.Profile{
+	adapter := newTestAdapter(t, buildprofile.Profile{
 		ID: "test-profile",
 		HTTPChat: buildprofile.HTTPChatConfig{
 			Enabled:     true,
 			BindAddress: "127.0.0.1:5500",
 		},
-	}
+	}, nil, nil)
 
-	service, err := core.NewService(profile, testStore{}, nil)
-	if err != nil {
-		t.Fatalf("NewService() error = %v", err)
-	}
-
-	adapter := New("127.0.0.1:5500", service, nil)
 	mux := adapter.buildMux()
 
 	indexRecorder := httptest.NewRecorder()
@@ -284,17 +191,20 @@ func TestBuildMuxAvoidsRouteConflicts(t *testing.T) {
 	if indexRecorder.Code != http.StatusOK {
 		t.Fatalf("expected root path to be served, got %d", indexRecorder.Code)
 	}
+	if strings.Contains(indexRecorder.Body.String(), "<!DOCTYPE html>") {
+		t.Fatalf("expected root handler to return JSON instead of HTML")
+	}
 
 	proxyRecorder := httptest.NewRecorder()
 	proxyRequest := httptest.NewRequest(http.MethodGet, "/api/proxy/session/test", nil)
 	mux.ServeHTTP(proxyRecorder, proxyRequest)
 	if proxyRecorder.Code == http.StatusOK && strings.Contains(proxyRecorder.Body.String(), "<!DOCTYPE html>") {
-		t.Fatalf("expected API route not to be shadowed by root GET handler")
+		t.Fatalf("expected API route not to be shadowed by root handler")
 	}
 }
 
 func TestHandleCommandStreamEmitsSSEChunksAndDone(t *testing.T) {
-	profile := buildprofile.Profile{
+	adapter := newTestAdapter(t, buildprofile.Profile{
 		ID: "test-profile",
 		Capabilities: []buildprofile.Capability{
 			buildprofile.CapabilityAdapterHTTPChat,
@@ -304,19 +214,13 @@ func TestHandleCommandStreamEmitsSSEChunksAndDone(t *testing.T) {
 			Enabled:     true,
 			BindAddress: "127.0.0.1:5500",
 		},
-	}
+	}, []core.Plugin{streamPlugin{}}, nil)
 
-	service, err := core.NewService(profile, testStore{}, []core.Plugin{streamPlugin{}})
-	if err != nil {
-		t.Fatalf("NewService() error = %v", err)
-	}
-
-	adapter := New("127.0.0.1:5500", service, nil)
 	body := bytes.NewBufferString(`{"principal_id":"operator-local","roles":["operator"],"command":"ask","args":{"prompt":"hello"}}`)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/api/command/stream", body)
 
-	adapter.handleCommandStream(recorder, request)
+	adapter.buildMux().ServeHTTP(recorder, request)
 
 	if contentType := recorder.Header().Get("Content-Type"); !strings.Contains(contentType, "text/event-stream") {
 		t.Fatalf("expected SSE content type, got %q", contentType)
@@ -337,17 +241,13 @@ func TestHandleCommandStreamEmitsSSEChunksAndDone(t *testing.T) {
 }
 
 func TestHandleCommandStreamEmitsErrorEvent(t *testing.T) {
-	service, err := core.NewService(buildprofile.Profile{ID: "test-profile"}, testStore{}, []core.Plugin{streamPlugin{}})
-	if err != nil {
-		t.Fatalf("NewService() error = %v", err)
-	}
+	adapter := newTestAdapter(t, buildprofile.Profile{ID: "test-profile"}, []core.Plugin{streamPlugin{}}, nil)
 
-	adapter := New("127.0.0.1:5500", service, nil)
 	body := bytes.NewBufferString(`{"principal_id":"operator-local","roles":["operator"],"command":"ask","args":{"prompt":"hello"}}`)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/api/command/stream", body)
 
-	adapter.handleCommandStream(recorder, request)
+	adapter.buildMux().ServeHTTP(recorder, request)
 
 	responseBody := recorder.Body.String()
 	if !strings.Contains(responseBody, "event: error") {

@@ -1,45 +1,58 @@
-<h1 align="center">HubRelay</h1>
+# HubRelay
 
-<p align="center">
-  A single command bus on the server.<br/>
-  Your laptop talks to it over SSH. Integrations plug in as adapters.
-</p>
+HubRelay is a headless command hub with controlled egress relay.
 
-<p align="center">
-  <sub>Go · BoltDB · loopback HTTP · immutable profiles · SOCKS proxy sessions · OpenAI-compatible AI</sub>
-</p>
-
----
+It does not serve a browser UI and it does not own your application data.
+It accepts a command, gates it, relays it through the approved path, and returns what came back.
 
 ## What it does
 
-HubRelay sits on a host and exposes a typed command interface. You connect through an SSH tunnel, issue commands from the browser or `curl`, and the server runs them through a capability-gated plugin chain. Outbound calls (AI, APIs) go through a shared egress policy so you control what leaves the box and how.
+HubRelay runs a private command bus on the server and exposes JSON and streaming endpoints over controlled transports.
 
-```
-laptop ──ssh -L──▶ 127.0.0.1:5500 ──▶ command bus ──▶ plugins
-                                            │
-                                        audit (BoltDB)
+```text
+client app / CLI / dashboard
+        |
+        v
+sdk/hubrelay
+        |
+        v
+HubRelay binary
+        |
+        +--> core.Service
+        +--> plugins
+        +--> audit (BoltDB)
+        +--> egress manager
+                |
+                +--> wg-b1 / wg-b2 / ...
+                +--> blackhole when nothing is healthy
 ```
 
-Nothing listens on a public port. No secrets in the database. No adapter surprises after deploy.
+Primary client model:
+- Go SDK over HTTP
+- Go SDK over unix socket
+
+Debug or lab access can still use SSH local forwarding to the private HTTP listener.
 
 ## Design choices
 
 | Decision | Reasoning |
 | --- | --- |
-| Profile compiled into the image | Adapters and capabilities are reviewed once. The running container cannot grow new surface. |
-| BoltDB on a mounted volume | State survives `docker compose down && up`. Image root stays `read_only`. |
-| Loopback bind + `ssh -L` | Your workstation is the trust boundary, not a firewall rule you hope is right. |
-| Shared outbound policy | AI is the first consumer. The same lease/proxy/direct logic covers anything that dials out. |
-| Env override for local dev | `INPUT_*` vars merge at startup so `go run ./cmd/bot` works without `-ldflags` on your laptop. |
+| Headless binary | Keep transport/UI concerns outside the server process. |
+| SDK-first access | Future dashboards, CLIs, and agents share one typed client contract. |
+| Immutable build profile | Runtime surface does not grow after deploy. |
+| BoltDB on a mounted volume | State survives restarts without turning the image mutable. |
+| Multi-egress manager | Failover is explicit, auditable, and health-driven. |
+| OS-level enforcement | Host routing and firewall policy prevent WAN fallback. |
 
 ## Get running
+
+Run tests:
 
 ```bash
 go test ./...
 ```
 
-### Local (dev)
+Local run:
 
 ```bash
 export INPUT_AI_API_KEY="<YOUR_AI_API_KEY>"
@@ -51,46 +64,64 @@ export INPUT_PROXY_SESSION_ENABLED="false"
 go run ./cmd/bot
 ```
 
-Then open `http://127.0.0.1:5500`.
-
-### Provider smoke (just the AI path, no server)
+Basic verification:
 
 ```bash
-export SMOKE_AI_API_KEY="<YOUR_AI_API_KEY>"
-export SMOKE_AI_BASE_URL="https://api.example.com/v1"
-export SMOKE_AI_MODEL="<YOUR_MODEL_ID>"
-go run ./cmd/provider-smoke
-```
-
-Prints the raw provider response or error to stderr. Useful before you blame the UI.
-
-### Docker
-
-```bash
-docker compose up --build
 curl -s http://127.0.0.1:5500/healthz
+curl -s http://127.0.0.1:5500/api/command \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
 ```
+
+## SDK
+
+Use the Go SDK from `sdk/hubrelay`:
+
+```go
+client := hubrelay.NewHTTPClient("http://127.0.0.1:5500",
+    hubrelay.WithPrincipal(hubrelay.Principal{
+        ID:    "operator-local",
+        Roles: []string{"operator"},
+    }),
+)
+defer client.Close()
+
+result, err := client.Execute(ctx, hubrelay.CommandRequest{
+    Command: "ask",
+    Args: map[string]string{
+        "prompt": "hello",
+    },
+})
+```
+
+See:
+- [`docs/sdk.md`](docs/sdk.md)
+- [`docs/egress.md`](docs/egress.md)
+- [`docs/streaming.md`](docs/streaming.md)
 
 ## Docs
 
 | Path | What you find there |
 | --- | --- |
-| [`docs/`](docs/README.md) | Full guide: Go install, providers, tunnel, proxy, deploy |
+| [`docs/`](docs/README.md) | Canonical English guide for operators and contributors |
 | [`.project/`](.project/README.md) | Architecture notes, ADRs, threat model |
-| [`.paas/README.md`](.paas/README.md) | Deploy extensions and every `INPUT_*` explained |
-| [`.paas/.check-deploy.md`](.paas/.check-deploy.md) | Deploy checklist with sanitised placeholders |
-| [`.paas/.check-smoke.md`](.paas/.check-smoke.md) | Local smoke curls |
+| [`.project/wg/os-enforcement.md`](.project/wg/os-enforcement.md) | Host-level kill switch and policy routing runbook |
+| [`.paas/README.md`](.paas/README.md) | Deploy extensions and `INPUT_*` reference |
 
 ## Storage
 
 BoltDB lives at `data/bot.db` by default. Set `BOT_DB_FILE` to change the path.
 
-Secrets are never written to BoltDB. They exist only inside the compiled profile.
+Secrets are never written to BoltDB. They exist only in runtime configuration and provider requests.
 
 ## Security
 
-Do not commit real API keys or internal hostnames. Use `<PLACEHOLDER>` style in docs and issues.
+Do not commit real API keys, internal hostnames, or customer payloads. Use placeholder values in docs and examples.
+
+HubRelay should validate the private path.
+The operating system should enforce it.
 
 ---
 
-<sub>HubRelay — command hub with controlled egress relay. It does not generate answers, serve pages, or own your data. It accepts a command, gates it, relays it through a private path, and returns what came back. Everything else is a plugin.</sub>
+HubRelay — command hub with controlled egress relay. It does not generate answers, serve pages, or own your data. It accepts a command, gates it, relays it through a private path, and returns what came back. Everything else is a plugin.

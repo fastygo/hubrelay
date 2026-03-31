@@ -10,6 +10,8 @@ This folder is the **canonical English guide** for operators and contributors. I
 | [Local testing](local-testing/README.md) | Provider smoke CLI, local bot, verification curls |
 | [Providers and AI](providers-and-ai/README.md) | OpenAI-compatible endpoints, models, base URL pitfalls |
 | [Network, tunnel, and proxy](network-tunnel-and-proxy/README.md) | SSH loopback access, SOCKS sessions, outbound policy |
+| [SDK](sdk.md) | Go client package for HTTP and unix socket access |
+| [Egress](egress.md) | Multi-egress configuration, health model, and failover behavior |
 | [Security and privacy](security-and-privacy/README.md) | Secrets boundary, sensitive-data handling, safe docs practice |
 | [Deploy](deploy/README.md) | PaaS extensions, inputs, read-only containers |
 | [Operations](operations/README.md) | Health checks, logs, common failures |

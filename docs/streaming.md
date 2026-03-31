@@ -210,33 +210,15 @@ func (p Plugin) ExecuteStream(ctx context.Context, cmdCtx core.CommandContext, e
 
 ## Client Integration
 
-### Browser example
+### Go SDK
 
-`EventSource` only supports `GET`, so browser clients that need `POST` should use `fetch()` and parse the SSE stream manually, or a small SDK wrapper around `ReadableStream`.
+The preferred client path is `sdk/hubrelay`, which wraps:
+- `POST /api/command`
+- `POST /api/command/stream`
+- `GET /healthz`
+- `GET /` discovery
 
-Minimal `fetch()` pattern:
-
-```javascript
-const response = await fetch("/api/command/stream", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    principal_id: "operator-local",
-    roles: ["operator"],
-    command: "ask",
-    args: { prompt: "hello" }
-  })
-});
-
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const { value, done } = await reader.read();
-  if (done) break;
-  console.log(decoder.decode(value, { stream: true }));
-}
-```
+The SDK hides manual SSE parsing and works over both HTTP and unix socket transports.
 
 ### `curl` example
 
@@ -273,10 +255,10 @@ Current coverage includes:
 
 ## Notes for Future Adapters
 
-This contract is intentionally neutral enough for future transports:
+This contract is intentionally neutral enough for future transports and SDKs:
 
 - WebSocket can map `chunk`, `done`, and `error` directly to frames.
 - gRPC can map chunks to a server stream and keep the final result in trailer metadata or a final message.
-- A local SDK can consume SSE today without any server-side protocol change.
+- The Go SDK consumes SSE today without any server-side protocol change.
 
 The transport should stay thin. Policy enforcement, capability checks, safety checks, and audit should remain in `core.Service`.

@@ -4,16 +4,21 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
+
+	"sshbot/internal/egress"
 )
 
 type Capability string
 
 const (
 	CapabilityAdapterHTTPChat    Capability = "adapter.http_chat"
+	CapabilityAdapterUnixSocket  Capability = "adapter.unix_socket"
 	CapabilityAdapterEmail       Capability = "adapter.email"
 	CapabilityPluginSystemInfo   Capability = "plugin.system.info"
 	CapabilityPluginCapabilities Capability = "plugin.system.capabilities"
 	CapabilityPluginAudit        Capability = "plugin.system.audit"
+	CapabilityEgressStatus       Capability = "plugin.egress.status"
 	CapabilityAIChat             Capability = "ai.chat"
 	CapabilityProxySession       Capability = "proxy.session"
 )
@@ -27,6 +32,11 @@ type EmailConfig struct {
 	Enabled  bool
 	Provider string
 	Mode     string
+}
+
+type UnixSocketConfig struct {
+	Enabled    bool
+	SocketPath string
 }
 
 type OpenAIConfig struct {
@@ -52,37 +62,49 @@ type PrivateEgressConfig struct {
 	FailClosed bool
 }
 
+type EgressConfig struct {
+	UseManager    bool
+	CheckInterval time.Duration
+	Gateways      []egress.GatewayConfig
+}
+
 type Profile struct {
 	ID            string
 	DisplayName   string
 	Capabilities  []Capability
 	HTTPChat      HTTPChatConfig
+	UnixSocket    UnixSocketConfig
 	Email         EmailConfig
 	OpenAI        OpenAIConfig
 	ProxySession  ProxySessionConfig
 	PrivateEgress PrivateEgressConfig
+	Egress        EgressConfig
 }
 
 var (
-	currentProfileID     = "tunnel-email-openai"
-	currentDisplayName   = "Tunnel chat + Yandex mail + OpenAI"
-	currentHTTPBind      = "127.0.0.1:5500"
-	currentEmailEnabled  = "true"
-	currentEmailProvider = "yandex"
-	currentEmailMode     = "scaffold"
-	currentOpenAIEnabled = "true"
-	currentAIProvider    = "openai"
-	currentAIAPIKey      = ""
-	currentAIBaseURL     = ""
-	currentAIModel       = "gpt-4.1-mini"
-	currentAIAPIMode     = "chat_completions"
-	currentChatHistory   = "false"
-	currentProxySession  = "true"
-	currentProxyForce    = "true"
+	currentProfileID               = "tunnel-email-openai"
+	currentDisplayName             = "Tunnel chat + Yandex mail + OpenAI"
+	currentHTTPBind                = "127.0.0.1:5500"
+	currentEmailEnabled            = "true"
+	currentEmailProvider           = "yandex"
+	currentEmailMode               = "scaffold"
+	currentUnixSocketEnabled       = "false"
+	currentUnixSocketPath          = "/run/hubrelay/hubrelay.sock"
+	currentOpenAIEnabled           = "true"
+	currentAIProvider              = "openai"
+	currentAIAPIKey                = ""
+	currentAIBaseURL               = ""
+	currentAIModel                 = "gpt-4.1-mini"
+	currentAIAPIMode               = "chat_completions"
+	currentChatHistory             = "false"
+	currentProxySession            = "true"
+	currentProxyForce              = "true"
 	currentPrivateEgressRequired   = "false"
 	currentPrivateEgressInterface  = ""
 	currentPrivateEgressTestHost   = ""
 	currentPrivateEgressFailClosed = "false"
+	currentEgressGateways          = ""
+	currentEgressCheckInterval     = ""
 )
 
 func (p Profile) Has(capability Capability) bool {
@@ -108,6 +130,9 @@ func Current() Profile {
 	if isTruthy(currentEmailEnabled) {
 		capabilities = append(capabilities, CapabilityAdapterEmail)
 	}
+	if isTruthy(currentUnixSocketEnabled) {
+		capabilities = append(capabilities, CapabilityAdapterUnixSocket)
+	}
 	if isTruthy(currentOpenAIEnabled) && hasAIKey {
 		capabilities = append(capabilities, CapabilityAIChat)
 		if provider := strings.TrimSpace(strings.ToLower(currentAIProvider)); provider != "" {
@@ -120,6 +145,10 @@ func Current() Profile {
 	if isTruthy(currentProxySession) {
 		capabilities = append(capabilities, CapabilityProxySession)
 	}
+	egressGateways, err := egress.ParseGatewayConfigs(currentEgressGateways)
+	if err == nil && len(egressGateways) > 0 {
+		capabilities = append(capabilities, CapabilityEgressStatus)
+	}
 
 	return Profile{
 		ID:           currentProfileID,
@@ -128,6 +157,10 @@ func Current() Profile {
 		HTTPChat: HTTPChatConfig{
 			Enabled:     currentHTTPBind != "",
 			BindAddress: currentHTTPBind,
+		},
+		UnixSocket: UnixSocketConfig{
+			Enabled:    isTruthy(currentUnixSocketEnabled),
+			SocketPath: strings.TrimSpace(currentUnixSocketPath),
 		},
 		Email: EmailConfig{
 			Enabled:  isTruthy(currentEmailEnabled),
@@ -154,6 +187,11 @@ func Current() Profile {
 			TestHost:   strings.TrimSpace(currentPrivateEgressTestHost),
 			FailClosed: isTruthy(currentPrivateEgressFailClosed),
 		},
+		Egress: EgressConfig{
+			UseManager:    err == nil && len(egressGateways) > 0,
+			CheckInterval: egress.NormalizeCheckInterval(currentEgressCheckInterval),
+			Gateways:      egressGateways,
+		},
 	}
 }
 
@@ -174,11 +212,15 @@ func applyEnvOverrides() {
 		envOverrideAlways(&currentAIAPIMode, "INPUT_AI_API_MODE")
 		envOverrideAlways(&currentProxyForce, "INPUT_PROXY_SESSION_FORCE")
 		envOverrideAlways(&currentProxySession, "INPUT_PROXY_SESSION_ENABLED")
+		envOverrideAlways(&currentUnixSocketEnabled, "INPUT_UNIX_SOCKET_ENABLED")
+		envOverrideAlways(&currentUnixSocketPath, "INPUT_UNIX_SOCKET_PATH")
 		envOverrideAlways(&currentChatHistory, "INPUT_CHAT_HISTORY")
 		envOverrideAlways(&currentPrivateEgressRequired, "INPUT_PRIVATE_EGRESS_REQUIRED")
 		envOverrideAlways(&currentPrivateEgressInterface, "INPUT_PRIVATE_EGRESS_INTERFACE")
 		envOverrideAlways(&currentPrivateEgressTestHost, "INPUT_PRIVATE_EGRESS_TEST_HOST")
 		envOverrideAlways(&currentPrivateEgressFailClosed, "INPUT_PRIVATE_EGRESS_FAIL_CLOSED")
+		envOverrideAlways(&currentEgressGateways, "INPUT_EGRESS_GATEWAYS")
+		envOverrideAlways(&currentEgressCheckInterval, "INPUT_EGRESS_CHECK_INTERVAL")
 	})
 }
 

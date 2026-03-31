@@ -124,6 +124,14 @@ type collectingStreamWriter struct {
 	result core.CommandResult
 }
 
+type staticGatewayProvider struct {
+	name string
+}
+
+func (p staticGatewayProvider) ActiveGatewayName() string {
+	return p.name
+}
+
 func (w *collectingStreamWriter) WriteChunk(chunk core.StreamChunk) error {
 	w.chunks = append(w.chunks, chunk)
 	return nil
@@ -139,7 +147,12 @@ func (w *collectingStreamWriter) Flush() error {
 
 func TestServiceExecutesKnownCommand(t *testing.T) {
 	store := &memoryStore{}
-	service, err := core.NewService(buildprofile.Current(), store, []core.Plugin{stubPlugin{}})
+	service, err := core.NewService(
+		buildprofile.Current(),
+		store,
+		[]core.Plugin{stubPlugin{}},
+		core.WithActiveGatewayProvider(staticGatewayProvider{name: "wg-b1"}),
+	)
 	if err != nil {
 		t.Fatalf("NewService() error = %v", err)
 	}
@@ -159,6 +172,9 @@ func TestServiceExecutesKnownCommand(t *testing.T) {
 	}
 	if len(store.audit) != 1 {
 		t.Fatalf("expected one audit entry, got %d", len(store.audit))
+	}
+	if got := store.audit[0].Metadata["egress_gateway"]; got != "wg-b1" {
+		t.Fatalf("expected egress gateway metadata, got %q", got)
 	}
 }
 

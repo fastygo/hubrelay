@@ -14,28 +14,28 @@ On your workstation:
 ssh -N -L 5500:127.0.0.1:5500 -i <SSH_PRIVATE_KEY> user@<SERVER_HOST>
 ```
 
-Then open `http://127.0.0.1:5500` in a browser on that workstation.
+Then call the loopback API from `curl`, the Go SDK, or another private client on that workstation.
 
-**Why this works**: SSH encrypts and authenticates the tunnel; the browser talks to local loopback only.
+**Why this works**: SSH encrypts and authenticates the tunnel; the client talks to local loopback only.
 
-## When the browser cannot reach the AI provider
+## When the client cannot reach the AI provider
 
-The **browser** does not call OpenAI directly. The **server process** does. Traffic path:
+The **client** does not call OpenAI directly. The **server process** does. Traffic path:
 
 ```
-Browser → SSH tunnel → bot HTTP → plugin ask → AI provider
+Client → SSH tunnel → HubRelay API → plugin ask → AI provider
 ```
 
 If the server must egress via SOCKS (provider allow-lists, isolation), the bot can require a **proxy session**.
 
 ## Proxy session (SOCKS pool)
 
-**What**: operators paste a list of `host:port` SOCKS proxies in the UI (or API). The server probes them, picks a **sticky lease** per session id, and can fail over on transport errors.
+**What**: operators submit a list of `host:port` SOCKS proxies through the API. The server probes them, picks a **sticky lease** per session id, and can fail over on transport errors.
 
 **Where state lives**:
 
 - **Server**: in-memory manager (lost on restart).
-- **Browser**: `sessionStorage` for the session id and selection (not BoltDB, not `localStorage` mixed with chat unless you choose otherwise in product UX).
+- **Client**: any temporary state you keep outside the server, such as a session id cached by your SDK consumer.
 
 **Why not BoltDB**: proxy pools are ephemeral tactical routing; persisting them would mix operational noise with durable audit data.
 

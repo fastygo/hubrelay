@@ -1,10 +1,10 @@
 # Local testing
 
-Why test in layers: isolate **provider credentials** from **HTTP stack**, then validate the **full bot**.
+Why test in layers: isolate **provider credentials** from **transport wiring**, then validate the **full hub**.
 
 ## 1. Provider smoke (`cmd/provider-smoke`)
 
-Minimal binary that calls the same `internal/ai` stack as the bot **without** BoltDB, adapters, or proxy UI.
+Minimal binary that calls the same `internal/ai` stack as the bot **without** BoltDB, adapters, or proxy session API flows.
 
 **Why**: fastest feedback when a key, model, or base URL is wrong. Errors print to stderr with full provider messages.
 

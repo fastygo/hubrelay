@@ -15,9 +15,22 @@ import (
 var ErrUnknownCommand = errors.New("unknown command")
 
 type Service struct {
-	profile buildprofile.Profile
-	store   Store
-	plugins map[string]Plugin
+	profile               buildprofile.Profile
+	store                 Store
+	plugins               map[string]Plugin
+	activeGatewayProvider ActiveGatewayProvider
+}
+
+type ActiveGatewayProvider interface {
+	ActiveGatewayName() string
+}
+
+type ServiceOption func(*Service)
+
+func WithActiveGatewayProvider(provider ActiveGatewayProvider) ServiceOption {
+	return func(service *Service) {
+		service.activeGatewayProvider = provider
+	}
 }
 
 type dispatchState struct {
@@ -28,7 +41,7 @@ type dispatchState struct {
 	outcome  string
 }
 
-func NewService(profile buildprofile.Profile, store Store, plugins []Plugin) (*Service, error) {
+func NewService(profile buildprofile.Profile, store Store, plugins []Plugin, options ...ServiceOption) (*Service, error) {
 	if err := store.EnsureSchema(profile); err != nil {
 		return nil, err
 	}
@@ -45,6 +58,12 @@ func NewService(profile buildprofile.Profile, store Store, plugins []Plugin) (*S
 			return nil, errors.New("plugin name cannot be empty")
 		}
 		service.plugins[name] = plugin
+	}
+
+	for _, option := range options {
+		if option != nil {
+			option(service)
+		}
 	}
 
 	return service, nil
@@ -241,6 +260,11 @@ func (s *Service) recordAudit(envelope CommandEnvelope, result CommandResult, ou
 			"roles":        strings.Join(slices.Clone(envelope.Principal.Roles), ","),
 		},
 		RecordedAt: time.Now().UTC(),
+	}
+	if s.activeGatewayProvider != nil {
+		if gatewayName := strings.TrimSpace(s.activeGatewayProvider.ActiveGatewayName()); gatewayName != "" {
+			entry.Metadata["egress_gateway"] = gatewayName
+		}
 	}
 	_ = s.store.RecordAudit(entry)
 }

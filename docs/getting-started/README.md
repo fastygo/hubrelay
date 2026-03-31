@@ -48,7 +48,7 @@ export INPUT_PROXY_SESSION_ENABLED="false"
 go run ./cmd/bot
 ```
 
-Open `http://127.0.0.1:5500` (or the bind address shown in `capabilities`).
+Then verify the headless API with `curl` or the Go SDK.
 
 **Why disable proxy flags locally**: unless you are testing SOCKS, disabling proxy session avoids needing a lease for every `ask`.
 
@@ -61,9 +61,10 @@ curl -s -X POST http://127.0.0.1:5500/api/command \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
 ```
 
-Confirm `ai_has_api_key` is `true` before relying on the browser chat.
+Confirm `ai_has_api_key` is `true` before relying on provider-backed commands.
 
 ## Next steps
 
 - [Local testing](../local-testing/README.md) — smaller `provider-smoke` tool.
 - [Providers and AI](../providers-and-ai/README.md) — base URLs and provider quirks.
+- [SDK](../sdk.md) — consume HubRelay from Go over HTTP or unix socket.

@@ -1,4 +1,4 @@
-package httpchat
+package shared
 
 import (
 	"context"

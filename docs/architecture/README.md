@@ -6,10 +6,10 @@ This section orients new readers. Authoritative diagrams and contracts also live
 
 | Layer | Responsibility |
 | --- | --- |
-| **Adapters** | Map transports (HTTP, email, …) to `CommandEnvelope` |
+| **Adapters** | Map transports (HTTP, unix socket, email, …) to `CommandEnvelope` |
 | **Core / command bus** | ACL, capabilities, audit, sensitive-data gates |
 | **Plugins** | Implement commands (`capabilities`, `system-info`, `ask`, …) |
-| **Outbound policy** | Decide direct vs SOCKS lease for workload egress |
+| **Egress manager / outbound policy** | Select healthy WG gateway and decide direct vs SOCKS lease for workload egress |
 | **AI provider** | OpenAI-compatible client (`chat_completions` or `responses` mode) |
 | **Storage** | BoltDB for principals, sessions, audit — not secrets |
 | **Build profile** | Immutable capability set compiled into the image |
@@ -32,15 +32,15 @@ Client → Adapter → CommandEnvelope → Core → Plugin(s)
 
 When a plugin calls an external API, it goes through **outbound policy** and the configured HTTP client (direct or SOCKS).
 
-## HTTP chat adapter (operational hardening)
+## Headless adapters (operational hardening)
 
 The loopback server applies:
 
 - Bounded request bodies (DoS mitigation),
 - Read/write timeouts on the HTTP server,
-- Safer rendering in the embedded page (dynamic strings escaped before `innerHTML`),
+- Shared JSON and SSE routes across TCP and unix socket transports,
 
-**Why**: even an internal-only listener can be reached by anyone who can open the forwarded port on the workstation; treat defense-in-depth as normal.
+**Why**: even an internal-only listener can be reached by anyone who can open the forwarded port or local socket; treat defense-in-depth as normal.
 
 ## Build profile and local dev
 
