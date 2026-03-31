@@ -56,3 +56,62 @@ func TestAskFailsClosedWhenPrivateEgressCheckFails(t *testing.T) {
 		t.Fatalf("unexpected error %v", err)
 	}
 }
+
+func TestAskStreamFailsClosedWhenPrivateEgressCheckFails(t *testing.T) {
+	provider, err := NewOpenAICompatibleProvider(
+		"openai",
+		"test-key",
+		"https://api.example.com/v1",
+		"gpt-test",
+		"chat_completions",
+		outbound.Policy{},
+		buildprofile.PrivateEgressConfig{
+			Required:   true,
+			Interface:  "wg0",
+			TestHost:   "10.88.0.1",
+			FailClosed: true,
+		},
+		fakePrivateEgressChecker{err: errors.New("private route unavailable")},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewOpenAICompatibleProvider() error = %v", err)
+	}
+
+	_, err = provider.AskStream(context.Background(), AskRequest{Prompt: "hello"}, func(AskStreamChunk) error {
+		return nil
+	})
+	if err == nil {
+		t.Fatal("expected private egress failure")
+	}
+	if !strings.Contains(err.Error(), "private route unavailable") {
+		t.Fatalf("unexpected error %v", err)
+	}
+}
+
+func TestAskStreamRequiresProxySessionWhenPolicyForcesProxy(t *testing.T) {
+	provider, err := NewOpenAICompatibleProvider(
+		"openai",
+		"test-key",
+		"https://api.example.com/v1",
+		"gpt-test",
+		"chat_completions",
+		outbound.Policy{RequireProxy: true},
+		buildprofile.PrivateEgressConfig{},
+		nil,
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewOpenAICompatibleProvider() error = %v", err)
+	}
+
+	_, err = provider.AskStream(context.Background(), AskRequest{Prompt: "hello"}, func(AskStreamChunk) error {
+		return nil
+	})
+	if err == nil {
+		t.Fatal("expected proxy requirement failure")
+	}
+	if !strings.Contains(err.Error(), "proxy session is required") {
+		t.Fatalf("unexpected error %v", err)
+	}
+}

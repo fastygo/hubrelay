@@ -76,6 +76,7 @@ func (a *Adapter) buildMux() *http.ServeMux {
 	mux.HandleFunc("GET /{$}", a.handleIndex)
 	mux.HandleFunc("GET /healthz", a.handleHealth)
 	mux.HandleFunc("POST /api/command", a.handleCommand)
+	mux.HandleFunc("POST /api/command/stream", a.handleCommandStream)
 	mux.HandleFunc("POST /api/proxy/session", a.handleProxyCollection)
 	mux.HandleFunc("GET /api/proxy/session/", a.handleProxySession)
 	mux.HandleFunc("POST /api/proxy/session/", a.handleProxySession)
@@ -833,15 +834,61 @@ type proxySelectRequest struct {
 
 func (a *Adapter) handleCommand(writer http.ResponseWriter, request *http.Request) {
 	request.Body = http.MaxBytesReader(writer, request.Body, maxRequestBodyBytes)
+	payload, ok := decodeCommandRequest(writer, request)
+	if !ok {
+		return
+	}
+
+	result, err := a.service.Execute(request.Context(), a.commandEnvelope(*payload))
+	if err != nil && result.Message == "" {
+		result.Message = err.Error()
+	}
+
+	statusCode := http.StatusOK
+	if result.Status == "error" {
+		statusCode = http.StatusBadRequest
+	}
+	writeJSON(writer, statusCode, result)
+}
+
+func (a *Adapter) handleCommandStream(writer http.ResponseWriter, request *http.Request) {
+	request.Body = http.MaxBytesReader(writer, request.Body, maxRequestBodyBytes)
+	payload, ok := decodeCommandRequest(writer, request)
+	if !ok {
+		return
+	}
+
+	writer.Header().Set("Content-Type", "text/event-stream")
+	writer.Header().Set("Cache-Control", "no-cache")
+	writer.Header().Set("Connection", "keep-alive")
+
+	streamWriter, err := newSSEStreamWriter(request.Context(), writer)
+	if err != nil {
+		writeJSON(writer, http.StatusInternalServerError, map[string]any{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if err := a.service.ExecuteStream(request.Context(), a.commandEnvelope(*payload), streamWriter); err != nil {
+		log.Printf("command stream failed: %v", err)
+	}
+}
+
+func decodeCommandRequest(writer http.ResponseWriter, request *http.Request) (*commandRequest, bool) {
 	var payload commandRequest
 	if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 		writeJSON(writer, http.StatusBadRequest, map[string]any{
 			"status":  "error",
 			"message": "invalid JSON payload",
 		})
-		return
+		return nil, false
 	}
+	return &payload, true
+}
 
+func (a *Adapter) commandEnvelope(payload commandRequest) core.CommandEnvelope {
 	name, args := parseCommand(payload.Command)
 	if len(payload.Args) > 0 {
 		if args == nil {
@@ -851,7 +898,7 @@ func (a *Adapter) handleCommand(writer http.ResponseWriter, request *http.Reques
 			args[key] = value
 		}
 	}
-	result, err := a.service.Execute(request.Context(), core.CommandEnvelope{
+	return core.CommandEnvelope{
 		ID:        fmt.Sprintf("http-%d", time.Now().UTC().UnixNano()),
 		Transport: "http_chat",
 		Name:      name,
@@ -864,16 +911,7 @@ func (a *Adapter) handleCommand(writer http.ResponseWriter, request *http.Reques
 			Roles:     payload.Roles,
 		},
 		RequestedAt: time.Now().UTC(),
-	})
-	if err != nil && result.Message == "" {
-		result.Message = err.Error()
 	}
-
-	statusCode := http.StatusOK
-	if result.Status == "error" {
-		statusCode = http.StatusBadRequest
-	}
-	writeJSON(writer, statusCode, result)
 }
 
 func (a *Adapter) handleProxyCollection(writer http.ResponseWriter, request *http.Request) {

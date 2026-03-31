@@ -24,6 +24,44 @@ func (testStore) RecordAudit(core.AuditEntry) error              { return nil }
 func (testStore) ListRecentAudit(int) ([]core.AuditEntry, error) { return nil, nil }
 func (testStore) Close() error                                   { return nil }
 
+type streamPlugin struct{}
+
+func (streamPlugin) Descriptor() core.PluginDescriptor {
+	return core.PluginDescriptor{
+		Name: "ask",
+		RequiredCapabilities: []buildprofile.Capability{
+			buildprofile.CapabilityAIChat,
+		},
+	}
+}
+
+func (streamPlugin) Execute(context.Context, core.CommandContext, core.CommandEnvelope) (core.CommandResult, error) {
+	return core.CommandResult{
+		Status:  "ok",
+		Message: "ai answer generated",
+		Data: map[string]any{
+			"answer": "hello world",
+		},
+	}, nil
+}
+
+func (streamPlugin) ExecuteStream(_ context.Context, _ core.CommandContext, _ core.CommandEnvelope, writer core.StreamWriter) error {
+	if err := writer.WriteChunk(core.StreamChunk{Delta: "hello"}); err != nil {
+		return err
+	}
+	if err := writer.WriteChunk(core.StreamChunk{Delta: " world"}); err != nil {
+		return err
+	}
+	writer.SetResult(core.CommandResult{
+		Status:  "ok",
+		Message: "ai answer generated",
+		Data: map[string]any{
+			"provider": "openai",
+		},
+	})
+	return nil
+}
+
 func TestHandleIndexRendersChatControls(t *testing.T) {
 	profile := buildprofile.Profile{
 		ID:          "test-profile",
@@ -252,5 +290,70 @@ func TestBuildMuxAvoidsRouteConflicts(t *testing.T) {
 	mux.ServeHTTP(proxyRecorder, proxyRequest)
 	if proxyRecorder.Code == http.StatusOK && strings.Contains(proxyRecorder.Body.String(), "<!DOCTYPE html>") {
 		t.Fatalf("expected API route not to be shadowed by root GET handler")
+	}
+}
+
+func TestHandleCommandStreamEmitsSSEChunksAndDone(t *testing.T) {
+	profile := buildprofile.Profile{
+		ID: "test-profile",
+		Capabilities: []buildprofile.Capability{
+			buildprofile.CapabilityAdapterHTTPChat,
+			buildprofile.CapabilityAIChat,
+		},
+		HTTPChat: buildprofile.HTTPChatConfig{
+			Enabled:     true,
+			BindAddress: "127.0.0.1:5500",
+		},
+	}
+
+	service, err := core.NewService(profile, testStore{}, []core.Plugin{streamPlugin{}})
+	if err != nil {
+		t.Fatalf("NewService() error = %v", err)
+	}
+
+	adapter := New("127.0.0.1:5500", service, nil)
+	body := bytes.NewBufferString(`{"principal_id":"operator-local","roles":["operator"],"command":"ask","args":{"prompt":"hello"}}`)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/command/stream", body)
+
+	adapter.handleCommandStream(recorder, request)
+
+	if contentType := recorder.Header().Get("Content-Type"); !strings.Contains(contentType, "text/event-stream") {
+		t.Fatalf("expected SSE content type, got %q", contentType)
+	}
+	responseBody := recorder.Body.String()
+	if !strings.Contains(responseBody, "event: chunk") {
+		t.Fatalf("expected chunk event, got %s", responseBody)
+	}
+	if !strings.Contains(responseBody, `"delta":"hello"`) {
+		t.Fatalf("expected first delta in response, got %s", responseBody)
+	}
+	if !strings.Contains(responseBody, "event: done") {
+		t.Fatalf("expected done event, got %s", responseBody)
+	}
+	if !strings.Contains(responseBody, `"provider":"openai"`) {
+		t.Fatalf("expected final provider metadata, got %s", responseBody)
+	}
+}
+
+func TestHandleCommandStreamEmitsErrorEvent(t *testing.T) {
+	service, err := core.NewService(buildprofile.Profile{ID: "test-profile"}, testStore{}, []core.Plugin{streamPlugin{}})
+	if err != nil {
+		t.Fatalf("NewService() error = %v", err)
+	}
+
+	adapter := New("127.0.0.1:5500", service, nil)
+	body := bytes.NewBufferString(`{"principal_id":"operator-local","roles":["operator"],"command":"ask","args":{"prompt":"hello"}}`)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/command/stream", body)
+
+	adapter.handleCommandStream(recorder, request)
+
+	responseBody := recorder.Body.String()
+	if !strings.Contains(responseBody, "event: error") {
+		t.Fatalf("expected error event, got %s", responseBody)
+	}
+	if !strings.Contains(responseBody, `"status":"error"`) {
+		t.Fatalf("expected error payload, got %s", responseBody)
 	}
 }

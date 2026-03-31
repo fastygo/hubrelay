@@ -23,16 +23,16 @@ import (
 )
 
 type OpenAICompatibleProvider struct {
-	name         string
-	model        string
-	apiKey       string
-	baseURL      string
-	apiMode      string
-	timeout      time.Duration
-	policy       outbound.Policy
-	privateEgress buildprofile.PrivateEgressConfig
+	name                 string
+	model                string
+	apiKey               string
+	baseURL              string
+	apiMode              string
+	timeout              time.Duration
+	policy               outbound.Policy
+	privateEgress        buildprofile.PrivateEgressConfig
 	privateEgressChecker outbound.PrivateEgressChecker
-	proxyManager *proxymgr.Manager
+	proxyManager         *proxymgr.Manager
 }
 
 func NewOpenAICompatibleProvider(name, apiKey, baseURL, model, apiMode string, policy outbound.Policy, privateEgress buildprofile.PrivateEgressConfig, privateEgressChecker outbound.PrivateEgressChecker, proxyManager *proxymgr.Manager) (*OpenAICompatibleProvider, error) {
@@ -49,16 +49,16 @@ func NewOpenAICompatibleProvider(name, apiKey, baseURL, model, apiMode string, p
 	}
 
 	return &OpenAICompatibleProvider{
-		name:         strings.TrimSpace(strings.ToLower(name)),
-		model:        strings.TrimSpace(model),
-		apiKey:       apiKey,
-		baseURL:      normalizedBaseURL,
-		apiMode:      normalizeAPIMode(apiMode),
-		timeout:      60 * time.Second,
-		policy:       policy,
-		privateEgress: privateEgress,
+		name:                 strings.TrimSpace(strings.ToLower(name)),
+		model:                strings.TrimSpace(model),
+		apiKey:               apiKey,
+		baseURL:              normalizedBaseURL,
+		apiMode:              normalizeAPIMode(apiMode),
+		timeout:              60 * time.Second,
+		policy:               policy,
+		privateEgress:        privateEgress,
 		privateEgressChecker: privateEgressChecker,
-		proxyManager: proxyManager,
+		proxyManager:         proxyManager,
 	}, nil
 }
 
@@ -94,6 +94,42 @@ func (p *OpenAICompatibleProvider) Ask(ctx context.Context, request AskRequest) 
 	return response, err
 }
 
+func (p *OpenAICompatibleProvider) AskStream(ctx context.Context, request AskRequest, callback StreamCallback) (AskResponse, error) {
+	model := strings.TrimSpace(request.Model)
+	if model == "" {
+		model = p.model
+	}
+	if p.privateEgress.Required {
+		if err := p.requirePrivateEgress(ctx); err != nil {
+			return AskResponse{}, err
+		}
+	}
+
+	proxySessionID := strings.TrimSpace(request.ProxySessionID)
+	proxyAddress, err := p.policy.ResolveProxyAddress(proxySessionID, outbound.ProxyLeaseResolver{Manager: p.proxyManager})
+	if err != nil {
+		return AskResponse{}, err
+	}
+
+	emitted := false
+	wrappedCallback := func(chunk AskStreamChunk) error {
+		if chunk.Delta != "" {
+			emitted = true
+		}
+		return callback(chunk)
+	}
+
+	response, err := p.askStreamOnce(ctx, request, model, proxyAddress, wrappedCallback)
+	if err != nil && proxyAddress != "" && proxySessionID != "" && p.proxyManager != nil && isTransportError(err) && !emitted {
+		_, _ = p.proxyManager.ReportFailure(proxySessionID, proxyAddress, err.Error())
+		lease, leaseErr := p.proxyManager.AcquireLease(proxySessionID)
+		if leaseErr == nil && lease.Address != "" && lease.Address != proxyAddress {
+			return p.askStreamOnce(ctx, request, model, lease.Address, wrappedCallback)
+		}
+	}
+	return response, err
+}
+
 func (p *OpenAICompatibleProvider) requirePrivateEgress(ctx context.Context) error {
 	if p.privateEgressChecker == nil {
 		if p.privateEgress.FailClosed {
@@ -124,6 +160,22 @@ func (p *OpenAICompatibleProvider) askOnce(ctx context.Context, request AskReque
 		return p.askViaResponses(ctx, client, request, model)
 	}
 	return p.askViaChatCompletions(ctx, client, request, model)
+}
+
+func (p *OpenAICompatibleProvider) askStreamOnce(ctx context.Context, request AskRequest, model, proxyAddress string, callback StreamCallback) (AskResponse, error) {
+	log.Printf("[ai] askStreamOnce name=%s model=%s base_url=%s api_mode=%s proxy=%q",
+		p.name, model, p.baseURL, p.apiMode, proxyAddress)
+
+	client, err := p.client(proxyAddress)
+	if err != nil {
+		log.Printf("[ai] streaming client creation failed: %v", err)
+		return AskResponse{}, err
+	}
+
+	if p.apiMode == "responses" {
+		return p.askViaResponsesStream(ctx, client, request, model, callback)
+	}
+	return p.askViaChatCompletionsStream(ctx, client, request, model, callback)
 }
 
 func (p *OpenAICompatibleProvider) askViaResponses(ctx context.Context, client openai.Client, request AskRequest, model string) (AskResponse, error) {
@@ -184,6 +236,108 @@ func (p *OpenAICompatibleProvider) askViaChatCompletions(ctx context.Context, cl
 		Model:      model,
 		Answer:     answer,
 		ResponseID: completion.ID,
+	}, nil
+}
+
+func (p *OpenAICompatibleProvider) askViaResponsesStream(ctx context.Context, client openai.Client, request AskRequest, model string, callback StreamCallback) (AskResponse, error) {
+	params := responses.ResponseNewParams{
+		Input: responses.ResponseNewParamsInputUnion{
+			OfString: openai.String(request.Prompt),
+		},
+		Model: shared.ResponsesModel(model),
+		Store: openai.Bool(false),
+	}
+	if instruction := strings.TrimSpace(request.System); instruction != "" {
+		params.Instructions = openai.String(instruction)
+	}
+	if userID := strings.TrimSpace(request.UserID); userID != "" {
+		params.SafetyIdentifier = openai.String(userID)
+	}
+
+	stream := client.Responses.NewStreaming(ctx, params)
+	defer stream.Close()
+
+	final := AskResponse{
+		Provider: p.name,
+		Model:    model,
+	}
+	for stream.Next() {
+		event := stream.Current()
+		switch event.Type {
+		case "response.output_text.delta":
+			delta := event.AsResponseOutputTextDelta()
+			if delta.Delta == "" {
+				continue
+			}
+			if err := callback(AskStreamChunk{Delta: delta.Delta}); err != nil {
+				return AskResponse{}, err
+			}
+		case "response.completed":
+			completed := event.AsResponseCompleted()
+			final.Model = completed.Response.Model
+			final.Answer = completed.Response.OutputText()
+			final.ResponseID = completed.Response.ID
+		case "error":
+			failure := event.AsError()
+			if failure.Message != "" {
+				return AskResponse{}, errors.New(failure.Message)
+			}
+		}
+	}
+	if err := stream.Err(); err != nil {
+		return AskResponse{}, err
+	}
+	return final, nil
+}
+
+func (p *OpenAICompatibleProvider) askViaChatCompletionsStream(ctx context.Context, client openai.Client, request AskRequest, model string, callback StreamCallback) (AskResponse, error) {
+	messages := make([]openai.ChatCompletionMessageParamUnion, 0, 2)
+	if instruction := strings.TrimSpace(request.System); instruction != "" {
+		messages = append(messages, openai.SystemMessage(instruction))
+	}
+	messages = append(messages, openai.UserMessage(request.Prompt))
+
+	params := openai.ChatCompletionNewParams{
+		Messages: messages,
+		Model:    openai.ChatModel(model),
+	}
+	if userID := strings.TrimSpace(request.UserID); userID != "" {
+		params.User = openai.String(userID)
+	}
+
+	stream := client.Chat.Completions.NewStreaming(ctx, params)
+	defer stream.Close()
+
+	accumulator := openai.ChatCompletionAccumulator{}
+	for stream.Next() {
+		chunk := stream.Current()
+		_ = accumulator.AddChunk(chunk)
+		for _, choice := range chunk.Choices {
+			if choice.Delta.Content != "" {
+				if err := callback(AskStreamChunk{
+					Delta:        choice.Delta.Content,
+					FinishReason: string(choice.FinishReason),
+				}); err != nil {
+					return AskResponse{}, err
+				}
+			}
+		}
+	}
+	if err := stream.Err(); err != nil {
+		return AskResponse{}, err
+	}
+
+	answer := ""
+	responseID := accumulator.ID
+	if len(accumulator.Choices) > 0 {
+		answer = strings.TrimSpace(accumulator.Choices[0].Message.Content)
+	}
+
+	return AskResponse{
+		Provider:   p.name,
+		Model:      model,
+		Answer:     answer,
+		ResponseID: responseID,
 	}, nil
 }
 

@@ -93,4 +93,4 @@ Do not commit real API keys or internal hostnames. Use `<PLACEHOLDER>` style in 
 
 ---
 
-<sub>The Go module is still called `sshbot`. Think of it as technical debt with a `TODO` — it works, it ships, it will get renamed right after that one other thing.</sub>
+<sub>HubRelay — command hub with controlled egress relay. It does not generate answers, serve pages, or own your data. It accepts a command, gates it, relays it through a private path, and returns what came back. Everything else is a plugin.</sub>
