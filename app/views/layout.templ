@@ -1,0 +1,15 @@
+package views
+
+import ui8layout "github.com/fastygo/ui8kit/layout"
+
+templ Layout(title string, active string, headExtra templ.Component) {
+	@ui8layout.Shell(ui8layout.ShellProps{
+		Title:     title,
+		BrandName: "HubRelay",
+		Active:    active,
+		NavItems:  navItems(),
+		HeadExtra: headExtra,
+	}) {
+		{ children... }
+	}
+}

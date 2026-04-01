@@ -1,0 +1,56 @@
+package layout
+
+templ Shell(props ShellProps) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ props.Title }</title>
+			<link rel="stylesheet" href={ shellCSS(props.CSSPath) }/>
+			@rawScript(themeScript)
+			if props.HeadExtra != nil {
+				@props.HeadExtra
+			}
+		</head>
+		<body class="kit-shell-body">
+			<input id={ MobileSheetCheckboxID } type="checkbox" class="kit-shell-mobile-sheet-input" aria-hidden="true" tabindex="-1"/>
+			<div class="kit-shell-mobile-sheet-portal">
+				<label for={ MobileSheetCheckboxID } class="kit-shell-mobile-sheet-overlay" aria-label="Close overlay"></label>
+				<div
+					id={ MobileSheetPanelID }
+					class="kit-shell-mobile-sheet-panel"
+					role="dialog"
+					aria-modal="true"
+					aria-label="Navigation menu"
+				>
+					<div class="kit-shell-mobile-sheet-header">
+						<span class="kit-shell-mobile-sheet-title">{ shellBrand(props.BrandName) }</span>
+						<label for={ MobileSheetCheckboxID } class="kit-shell-mobile-sheet-close" aria-label="Close navigation menu">✕</label>
+					</div>
+					<div class="kit-shell-mobile-sheet-content">
+						<nav class="kit-shell-nav-mobile">
+							@Sidebar(SidebarProps{Items: props.NavItems, Active: props.Active, Mobile: true})
+						</nav>
+					</div>
+				</div>
+			</div>
+			<div class="kit-shell-layout-row">
+				<aside class="kit-shell-desktop-aside">
+					<div class="kit-shell-desktop-brand-row">
+						<p class="font-bold">{ shellBrand(props.BrandName) }</p>
+					</div>
+					<nav class="kit-shell-nav-desktop">
+						@Sidebar(SidebarProps{Items: props.NavItems, Active: props.Active})
+					</nav>
+				</aside>
+				<div class="kit-shell-main-column">
+					@Header(HeaderProps{Title: props.Title})
+					<main class="kit-shell-main">
+						{ children... }
+					</main>
+				</div>
+			</div>
+		</body>
+	</html>
+}

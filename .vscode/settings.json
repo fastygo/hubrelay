@@ -1,0 +1,10 @@
+{
+  "workbench.colorTheme": "Default Dark Modern",
+  "files.associations": {
+    "*.templ": "go"
+  }
+
+  // Color theme (above) does not change file icons. Those come from the file icon theme
+  // (Command Palette: "Preferences: File Icon Theme"). Stock Seti has no per-extension
+  // override in settings; use Material Icon Theme / vscode-icons if you need a custom .templ icon.
+}

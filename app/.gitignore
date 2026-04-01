@@ -1,0 +1,5 @@
+node_modules/
+static/css/app.css
+tmp/
+dist/
+**/*templ.go

@@ -1,0 +1,76 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+	"hubrelay-dashboard/views/partials"
+)
+
+templ AskPage(data AskPageData) {
+	@Layout("Ask", "/ask", askPageHead()) {
+		<div class="app-page">
+			<div class="app-page-header">
+				@ui.Title(ui.TitleProps{Order: 1}, "Ask / Streaming")
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Run the ask command through the dashboard. JavaScript uses SSE, while the POST action provides a synchronous fallback.")
+			</div>
+
+			if data.Error != "" {
+				<div class="app-alert-error" role="alert">
+					{ data.Error }
+				</div>
+			}
+
+			<div class="app-two-col">
+				<div class={ utils.CardVariant("default") }>
+					<form id="ask-form" method="post" action="/ask" class="app-form">
+						<div class="space-y-2">
+							<label for="prompt-input" class="form-label">Prompt</label>
+							@ui.Field(ui.FieldProps{
+								ID:          "prompt-input",
+								Name:        "prompt",
+								Component:   "textarea",
+								Rows:        10,
+								Placeholder: "Ask HubRelay...",
+								Value:       data.Prompt,
+							})
+						</div>
+						<div class="space-y-2">
+							<label for="model-input" class="form-label">Model override</label>
+							@ui.Field(ui.FieldProps{
+								ID:          "model-input",
+								Name:        "model",
+								Placeholder: "optional",
+								Value:       data.Model,
+							})
+						</div>
+						<div class="app-actions">
+							@ui.Button(ui.ButtonProps{Type: "submit"}, "Start SSE stream")
+							<button type="submit" name="mode" value="sync" class="app-button-outline">
+								Run synchronously
+							</button>
+						</div>
+					</form>
+				</div>
+
+				@partials.StreamOutput()
+			</div>
+
+			if data.Result != nil {
+				<div class={ utils.CardVariant("default") }>
+					@ui.Title(ui.TitleProps{Order: 3}, "Synchronous Result")
+					<div class="kit-table-wrap">
+						<table class="kit-table">
+							<tbody class="table-body">
+								<tr><td class="kit-table-cell-label">Status</td><td class="kit-table-cell">{ data.Result.Status }</td></tr>
+								<tr><td class="kit-table-cell-label">Message</td><td class="kit-table-cell">{ data.Result.Message }</td></tr>
+								for key, value := range data.Result.Data {
+									<tr><td class="kit-table-cell-label">{ key }</td><td class="kit-table-cell">{ stringify(value) }</td></tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			}
+		</div>
+	}
+}

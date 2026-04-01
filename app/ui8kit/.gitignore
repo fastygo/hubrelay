@@ -1,0 +1,4 @@
+*_templ.go
+tmp/
+.DS_Store
+.manual/

@@ -1,0 +1,14 @@
+package partials
+
+import "github.com/fastygo/ui8kit/utils"
+
+templ StreamOutput() {
+	<div class={ utils.CardVariant("muted") }>
+		<div class="app-stream-head">
+			<h2 class="text-lg font-semibold">Streaming Output</h2>
+			<span id="stream-status" class="app-stream-status">idle</span>
+		</div>
+		<pre id="stream-output" class="app-stream-output"></pre>
+		<div id="stream-result" class="app-stream-result"></div>
+	</div>
+}

@@ -1,0 +1,60 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+)
+
+templ HealthPage(data HealthPageData) {
+	@Layout("Health", "/", nil) {
+		<div class="app-page">
+			<div class="app-page-header">
+				@ui.Title(ui.TitleProps{Order: 1}, "HubRelay Health")
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Discovery and adapter health for the connected HubRelay instance.")
+			</div>
+
+			if data.Error != "" {
+				<div class="app-alert-error" role="alert">
+					{ data.Error }
+				</div>
+			}
+
+			<div class="kit-kpi-grid-4">
+				<div class={ utils.CardVariant("kpi") }>
+					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Service")
+					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Discovery.Service)
+				</div>
+				<div class={ utils.CardVariant("kpi") }>
+					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Profile")
+					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Discovery.Profile)
+				</div>
+				<div class={ utils.CardVariant("kpi") }>
+					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Discovery Status")
+					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Discovery.Status)
+				</div>
+				<div class={ utils.CardVariant("kpi") }>
+					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Adapter Status")
+					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Health.Status)
+				</div>
+			</div>
+
+			<div class={ utils.CardVariant("default") }>
+				@ui.Title(ui.TitleProps{Order: 3}, "Adapter Details")
+				<div class="kit-table-wrap">
+					<table class="kit-table">
+						<tbody class="table-body">
+							<tr>
+								<td class="kit-table-cell-label">Adapter</td>
+								<td class="kit-table-cell">{ data.Health.Adapter }</td>
+							</tr>
+							<tr>
+								<td class="kit-table-cell-label">Profile</td>
+								<td class="kit-table-cell">{ data.Health.Profile }</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	}
+}

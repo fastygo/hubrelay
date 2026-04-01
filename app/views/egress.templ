@@ -1,0 +1,60 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+)
+
+templ EgressPage(data EgressPageData) {
+	@Layout("Egress", "/egress", nil) {
+		<div class="app-page">
+			<div class="app-page-header">
+				@ui.Title(ui.TitleProps{Order: 1}, "Egress Status")
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Current gateway health, priorities, and active failover state.")
+			</div>
+
+			if data.Error != "" {
+				<div class="app-alert-error" role="alert">
+					{ data.Error }
+				</div>
+			}
+
+			<div class={ utils.CardVariant("default") }>
+				<div class="kit-table-wrap">
+					<table class="kit-table">
+						<thead>
+							<tr class="kit-table-head-row">
+								<th class="kit-table-head-cell">Gateway</th>
+								<th class="kit-table-head-cell">Interface</th>
+								<th class="kit-table-head-cell">Priority</th>
+								<th class="kit-table-head-cell">Healthy</th>
+								<th class="kit-table-head-cell">Level</th>
+								<th class="kit-table-head-cell">Checks</th>
+								<th class="kit-table-head-cell">Active</th>
+								<th class="kit-table-head-cell">Last check</th>
+								<th class="kit-table-head-cell">Last transition</th>
+								<th class="kit-table-cell">Last error</th>
+							</tr>
+						</thead>
+						<tbody class="table-body">
+							for _, gateway := range data.Gateways {
+								<tr>
+									<td class="kit-table-cell-label">{ gateway.Name }</td>
+									<td class="kit-table-cell-label">{ gateway.Interface }</td>
+									<td class="kit-table-cell-label">{ gateway.Priority }</td>
+									<td class="kit-table-cell-label">{ boolLabel(gateway.Healthy) }</td>
+									<td class="kit-table-cell-label">{ gateway.HealthLevel }</td>
+									<td class="kit-table-cell-label">{ gatewaySummary(gateway) }</td>
+									<td class="kit-table-cell-label">{ boolLabel(gateway.Active) }</td>
+									<td class="kit-table-cell-label">{ formatTime(gateway.LastCheckAt) }</td>
+									<td class="kit-table-cell-label">{ formatTime(gateway.LastTransitionAt) }</td>
+									<td class="kit-table-cell">{ gateway.LastError }</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	}
+}

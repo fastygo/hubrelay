@@ -1,0 +1,22 @@
+---
+description: Strict prop-first policy for ui8kit templ files
+globs: app/ui8kit/**/*.templ
+alwaysApply: false
+---
+
+# UI8Kit templ strict mode
+
+- In `.templ` files under `app/ui8kit`, do not introduce new raw Tailwind utility strings in `class` attributes.
+- Prefer `utils.UtilityProps`, component props, and helper functions from `app/ui8kit/utils`.
+- If styling cannot be expressed via props:
+  - first extend `app/ui8kit/utils/props.go`, or
+  - add/extend variants in `app/ui8kit/utils/variants.go`, or
+  - create a semantic class in `app/ui8kit/styles/components.css` using `@apply`.
+- Avoid inline `style` attributes unless there is a hard functional requirement.
+- Preserve accessibility semantics: keep ARIA and interactive semantics correct after refactors.
+- Keep UI minimal and dashboard-like: avoid decorative effects and unnecessary animation.
+
+## Allowed exceptions
+
+- Existing legacy raw classes may remain temporarily during migration.
+- If a legacy class is touched, prefer converting it to prop/variant/semantic class in the same change.

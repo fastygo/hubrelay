@@ -1,0 +1,27 @@
+package layout
+
+templ Header(props HeaderProps) {
+	<header class="kit-header">
+		<label
+			id="ui8kit-menu-trigger"
+			for={ MobileSheetCheckboxID }
+			class="kit-header-menu-btn"
+			aria-label="Open navigation menu"
+			aria-haspopup="dialog"
+			aria-controls={ MobileSheetPanelID }
+		>
+			<span class="latty latty-menu h-4 w-4"></span>
+		</label>
+		<h1 class="kit-header-title">{ props.Title }</h1>
+		<button
+			type="button"
+			id="ui8kit-theme-toggle"
+			onclick="ui8kitToggleTheme()"
+			class="kit-header-theme-btn"
+			aria-label="Toggle theme"
+			aria-pressed="false"
+		>
+			<span id="theme-toggle-icon" class="latty latty-moon h-4 w-4"></span>
+		</button>
+	</header>
+}

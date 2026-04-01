@@ -1,0 +1,52 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+)
+
+templ AuditPage(data AuditPageData) {
+	@Layout("Audit", "/audit", nil) {
+		<div class="app-page">
+			<div class="app-page-header">
+				@ui.Title(ui.TitleProps{Order: 1}, "Audit")
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Recent command executions recorded by HubRelay.")
+			</div>
+
+			if data.Error != "" {
+				<div class="app-alert-error" role="alert">
+					{ data.Error }
+				</div>
+			}
+
+			<div class={ utils.CardVariant("default") }>
+				<div class="kit-table-wrap">
+					<table class="kit-table">
+						<thead>
+							<tr class="kit-table-head-row">
+								<th class="kit-table-head-cell">Time</th>
+								<th class="kit-table-head-cell">Command</th>
+								<th class="kit-table-head-cell">Principal</th>
+								<th class="kit-table-head-cell">Transport</th>
+								<th class="kit-table-head-cell">Outcome</th>
+								<th class="kit-table-cell">Message</th>
+							</tr>
+						</thead>
+						<tbody class="table-body">
+							for _, entry := range data.Entries {
+								<tr>
+									<td class="kit-table-cell-label whitespace-nowrap">{ formatTime(entry.At) }</td>
+									<td class="kit-table-cell-label">{ entry.Command }</td>
+									<td class="kit-table-cell-label">{ entry.Principal }</td>
+									<td class="kit-table-cell-label">{ entry.Transport }</td>
+									<td class="kit-table-cell-label">{ entry.Outcome }</td>
+									<td class="kit-table-cell">{ entry.Message }</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	}
+}

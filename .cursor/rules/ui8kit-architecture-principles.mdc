@@ -1,0 +1,19 @@
+---
+description: UI8Kit refactor guardrails and styling architecture
+alwaysApply: true
+---
+
+# UI8Kit Architecture Principles
+
+- Use an 8px-grid mindset. Prefer spacing/sizing steps aligned to 4 and 8.
+- Keep templates clean: avoid raw Tailwind utility strings in `.templ` whenever possible.
+- Do not add custom inline styles in templates.
+- Prefer prop-driven styling via `utils.UtilityProps` and component props.
+- If props are insufficient, extend `app/ui8kit/utils/props.go`.
+- If reusable patterns are needed, add semantic classes with `@apply`: layout shell in `app/ui8kit/styles/shell.css` (`kit-shell-*`, `kit-header-*`); shared UI in `app/ui8kit/styles/components.css` with prefix `kit-`. Application-only patterns use prefix `app-` in app CSS (not shipped as ui8kit).
+- It is allowed to expand variants in `app/ui8kit/utils/variants.go`.
+- Keep visuals simple; avoid unnecessary gradients, decorative animation, and visual noise.
+- Use only shadcn-style design tokens defined in `app/ui8kit/styles/base.css` for colors/surfaces.
+- Dark mode and ARIA are mandatory for interactive and semantic UI elements.
+- If more icons are needed, add Lucide-based icons in `app/ui8kit/styles/latty.css`.
+- Before validating changes, run generation flow (`templ generate` and UI8Kit CSS safelist generation).
