@@ -1,0 +1,14 @@
+{
+  "title": "Iniciar sesión",
+  "header": {
+    "title": "Iniciar sesión",
+    "description": "Usa las credenciales de operador configuradas para este panel."
+  },
+  "usernameLabel": "Usuario",
+  "passwordLabel": "Contraseña",
+  "submitLabel": "Entrar",
+  "errors": {
+    "invalidForm": "Formulario de acceso inválido",
+    "invalidCredentials": "Nombre de usuario o contraseña no válidos"
+  }
+}

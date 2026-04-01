@@ -43,6 +43,10 @@ func TestHeaderRender(t *testing.T) {
 			_, err := io.WriteString(w, `<button id="header-extra">extra</button>`)
 			return err
 		}),
+		Trailing: templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
+			_, err := io.WriteString(w, `<button id="header-trailing">trailing</button>`)
+			return err
+		}),
 		ThemeToggle: layout.ThemeToggleProps{
 			Label:              "Change theme",
 			SwitchToDarkLabel:  "Dark mode",
@@ -57,6 +61,7 @@ func TestHeaderRender(t *testing.T) {
 	assertContains(t, html, "aria-controls=\"ui8kit-mobile-sheet-panel\"")
 	assertContains(t, html, "for=\"ui8kit-mobile-sheet\"")
 	assertContains(t, html, "header-extra")
+	assertContains(t, html, "header-trailing")
 	assertContains(t, html, "data-switch-to-dark-label=\"Dark mode\"")
 	assertContains(t, html, "data-switch-to-light-label=\"Light mode\"")
 	assertContains(t, html, "aria-label=\"Change theme\"")
@@ -96,6 +101,10 @@ func TestShellRender(t *testing.T) {
 			_, err := io.WriteString(w, `<button id="shell-extra">shell</button>`)
 			return err
 		}),
+		HeaderTrailing: templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
+			_, err := io.WriteString(w, `<button id="shell-trailing">trail</button>`)
+			return err
+		}),
 		ThemeToggle: layout.ThemeToggleProps{
 			Label:              "Theme",
 			SwitchToDarkLabel:  "To dark",
@@ -119,6 +128,7 @@ func TestShellRender(t *testing.T) {
 	assertContains(t, html, "kit-shell-body")
 	assertContains(t, html, "kit-shell-main")
 	assertContains(t, html, "shell-extra")
+	assertContains(t, html, "shell-trailing")
 	assertContains(t, html, "data-switch-to-dark-label=\"To dark\"")
 }
 

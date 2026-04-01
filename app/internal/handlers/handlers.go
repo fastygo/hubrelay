@@ -10,12 +10,15 @@ import (
 
 	"github.com/a-h/templ"
 	"hubrelay-dashboard/internal/content"
+	"hubrelay-dashboard/internal/middleware"
 	"hubrelay-dashboard/internal/presenter"
 	"hubrelay-dashboard/internal/source"
 )
 
 type App struct {
 	DefaultLocale  string
+	Auth           *middleware.SessionAuth
+	AuthDisabled   bool
 	Presenters     map[string]*presenter.Presenter
 	LiveSource     source.Source
 	FixtureSources map[string]source.Source
@@ -27,7 +30,7 @@ type requestRuntime struct {
 	Source    source.Source
 }
 
-func New(catalogs map[string]content.Catalog, localeOrder []string, liveSource source.Source, fixtureSources map[string]source.Source) *App {
+func New(catalogs map[string]content.Catalog, localeOrder []string, liveSource source.Source, fixtureSources map[string]source.Source, auth *middleware.SessionAuth, authDisabled bool) *App {
 	presenters := make(map[string]*presenter.Presenter, len(catalogs))
 	toggleLocales := append([]string(nil), localeOrder...)
 	if len(toggleLocales) > 2 {
@@ -35,6 +38,7 @@ func New(catalogs map[string]content.Catalog, localeOrder []string, liveSource s
 	}
 	for locale, catalog := range catalogs {
 		presenters[locale] = presenter.New(catalog, presenter.Config{
+			AuthEnabled:      !authDisabled,
 			DefaultLocale:    content.DefaultLocale,
 			AvailableLocales: localeOrder,
 			ToggleLocales:    toggleLocales,
@@ -44,6 +48,8 @@ func New(catalogs map[string]content.Catalog, localeOrder []string, liveSource s
 
 	return &App{
 		DefaultLocale:  content.DefaultLocale,
+		Auth:           auth,
+		AuthDisabled:   authDisabled,
 		Presenters:     presenters,
 		LiveSource:     liveSource,
 		FixtureSources: fixtureSources,

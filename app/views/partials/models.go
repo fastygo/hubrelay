@@ -10,6 +10,12 @@ type LanguageToggleData struct {
 	Title            string
 }
 
+type LogoutActionData struct {
+	Enabled bool
+	Action  string
+	Title   string
+}
+
 type StreamOutputData struct {
 	Title                string
 	InitialStatus        string

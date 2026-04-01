@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -15,15 +16,27 @@ const (
 
 type Config struct {
 	AppBind            string
+	Auth               AuthConfig
 	DataSource         string
 	Transport          string
 	HubRelayBaseURL    string
 	HubRelaySocketPath string
 }
 
+type AuthConfig struct {
+	AdminUser string
+	AdminPass string
+	Disabled  bool
+}
+
 func Load() (Config, error) {
 	cfg := Config{
-		AppBind:            defaultString(os.Getenv("APP_BIND"), "0.0.0.0:8080"),
+		AppBind: defaultString(os.Getenv("APP_BIND"), "0.0.0.0:8080"),
+		Auth: AuthConfig{
+			AdminUser: defaultStringAny([]string{"APP_ADMIN_USER", "PAAS_ADMIN_USER"}, "admin"),
+			AdminPass: defaultStringAny([]string{"APP_ADMIN_PASS", "PAAS_ADMIN_PASS"}, "admin@123"),
+			Disabled:  defaultBoolAny([]string{"APP_AUTH_DISABLED", "DASHBOARD_AUTH_DISABLED"}, false),
+		},
 		DataSource:         strings.ToLower(defaultString(os.Getenv("APP_DATA_SOURCE"), DataSourceLive)),
 		Transport:          strings.ToLower(defaultString(os.Getenv("HUBRELAY_TRANSPORT"), TransportHTTP)),
 		HubRelayBaseURL:    defaultString(os.Getenv("HUBRELAY_BASE_URL"), "http://127.0.0.1:5500"),
@@ -62,4 +75,28 @@ func defaultString(value, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func defaultStringAny(keys []string, fallback string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return fallback
+}
+
+func defaultBoolAny(keys []string, fallback bool) bool {
+	for _, key := range keys {
+		value := strings.TrimSpace(os.Getenv(key))
+		if value == "" {
+			continue
+		}
+		parsed, err := strconv.ParseBool(value)
+		if err != nil {
+			return fallback
+		}
+		return parsed
+	}
+	return fallback
 }

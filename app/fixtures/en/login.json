@@ -1,0 +1,14 @@
+{
+  "title": "Sign in",
+  "header": {
+    "title": "Sign in",
+    "description": "Use the operator credentials configured for this dashboard."
+  },
+  "usernameLabel": "Username",
+  "passwordLabel": "Password",
+  "submitLabel": "Login",
+  "errors": {
+    "invalidForm": "Invalid login form",
+    "invalidCredentials": "Invalid username or password"
+  }
+}

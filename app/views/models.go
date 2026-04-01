@@ -12,6 +12,7 @@ type LayoutData struct {
 	BrandName      string
 	NavItems       []ui8layout.NavItem
 	LanguageToggle partials.LanguageToggleData
+	LogoutAction   partials.LogoutActionData
 	ThemeToggle    ThemeToggleData
 }
 
@@ -24,6 +25,17 @@ type ThemeToggleData struct {
 type PageHeader struct {
 	Title       string
 	Description string
+}
+
+type LoginPageData struct {
+	Layout        LayoutData
+	Header        PageHeader
+	Error         string
+	FormAction    string
+	UsernameLabel string
+	UsernameValue string
+	PasswordLabel string
+	SubmitLabel   string
 }
 
 type KV struct {

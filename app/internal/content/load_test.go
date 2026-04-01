@@ -42,6 +42,12 @@ func TestLoadEnglishCatalog(t *testing.T) {
 	if catalog.Common.SwitchToDarkTheme == "" {
 		t.Fatal("expected english theme toggle copy")
 	}
+	if catalog.Common.SignOut != "Sign out" {
+		t.Fatalf("expected english sign out copy, got %q", catalog.Common.SignOut)
+	}
+	if catalog.Login.SubmitLabel != "Login" {
+		t.Fatalf("expected english login submit label, got %q", catalog.Login.SubmitLabel)
+	}
 }
 
 func TestLoadRussianCatalog(t *testing.T) {
@@ -59,6 +65,12 @@ func TestLoadRussianCatalog(t *testing.T) {
 	if catalog.Common.SwitchToLightTheme == "" {
 		t.Fatal("expected russian theme toggle copy")
 	}
+	if catalog.Common.SignOut == "" {
+		t.Fatal("expected russian sign out copy")
+	}
+	if catalog.Login.PasswordLabel == "" {
+		t.Fatal("expected russian login password label")
+	}
 }
 
 func TestLoadSpanishCatalog(t *testing.T) {
@@ -75,5 +87,11 @@ func TestLoadSpanishCatalog(t *testing.T) {
 	}
 	if catalog.Common.ToggleTheme == "" {
 		t.Fatal("expected spanish generic theme toggle label")
+	}
+	if catalog.Common.SignOut == "" {
+		t.Fatal("expected spanish sign out copy")
+	}
+	if catalog.Login.Errors.InvalidCredentials == "" {
+		t.Fatal("expected spanish login invalid credentials copy")
 	}
 }

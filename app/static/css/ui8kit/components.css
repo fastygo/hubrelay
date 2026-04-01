@@ -16,7 +16,7 @@
   }
 
   .kit-card {
-    @apply rounded-xl border border-border bg-card p-4 shadow-sm;
+    @apply rounded-lg border border-border bg-card p-4 shadow-sm;
   }
 
   .kit-card--kpi {
@@ -76,7 +76,7 @@
   }
 
   .card {
-    @apply rounded border border-border bg-card;
+    @apply rounded-lg border border-border bg-card;
   }
 
   .card-header {

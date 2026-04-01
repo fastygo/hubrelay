@@ -15,6 +15,46 @@
     @apply rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive;
   }
 
+  .app-login-page {
+    @apply flex min-h-screen flex-col bg-background p-4 md:p-6;
+  }
+
+  .app-login-actions {
+    @apply flex justify-end gap-2;
+  }
+
+  .app-header-logout-form {
+    @apply inline-flex;
+  }
+
+  .app-header-logout-btn {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .app-login-body {
+    @apply flex flex-1 items-center justify-center;
+  }
+
+  .app-login-panel {
+    @apply w-full max-w-md;
+  }
+
+  .app-login-card {
+    @apply space-y-6;
+  }
+
+  .app-login-header {
+    @apply space-y-2;
+  }
+
+  .app-login-brand {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+
+  .app-login-submit {
+    @apply w-full;
+  }
+
   .app-two-col {
     @apply grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)];
   }

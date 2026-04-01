@@ -18,6 +18,7 @@ import (
 
 type Presenter struct {
 	content          content.Catalog
+	authEnabled      bool
 	defaultLocale    string
 	availableLocales []string
 	toggleLocales    []string
@@ -25,6 +26,7 @@ type Presenter struct {
 }
 
 type Config struct {
+	AuthEnabled      bool
 	DefaultLocale    string
 	AvailableLocales []string
 	ToggleLocales    []string
@@ -43,6 +45,11 @@ type AskPageState struct {
 	Result *source.CommandResult
 }
 
+type LoginPageState struct {
+	Username string
+	Error    string
+}
+
 func New(catalog content.Catalog, cfg Config) *Presenter {
 	meta := make(map[string]localeMeta, len(cfg.Catalogs))
 	for locale, item := range cfg.Catalogs {
@@ -54,6 +61,7 @@ func New(catalog content.Catalog, cfg Config) *Presenter {
 
 	return &Presenter{
 		content:          catalog,
+		authEnabled:      cfg.AuthEnabled,
 		defaultLocale:    cfg.DefaultLocale,
 		availableLocales: append([]string(nil), cfg.AvailableLocales...),
 		toggleLocales:    append([]string(nil), cfg.ToggleLocales...),
@@ -67,6 +75,40 @@ func (p *Presenter) AskPromptRequiredError() string {
 
 func (p *Presenter) AskInvalidFormError() string {
 	return p.content.Ask.Errors.InvalidForm
+}
+
+func (p *Presenter) LoginInvalidFormError() string {
+	return p.content.Login.Errors.InvalidForm
+}
+
+func (p *Presenter) LoginInvalidCredentialsError() string {
+	return p.content.Login.Errors.InvalidCredentials
+}
+
+func (p *Presenter) HomePath() string {
+	return p.localizePath("/")
+}
+
+func (p *Presenter) LoginPath() string {
+	return p.localizePath("/login")
+}
+
+func (p *Presenter) LoginPage(state LoginPageState) views.LoginPageData {
+	copy := p.content.Login
+
+	return views.LoginPageData{
+		Layout: p.layout(copy.Title, ""),
+		Header: views.PageHeader{
+			Title:       copy.Header.Title,
+			Description: copy.Header.Description,
+		},
+		Error:         strings.TrimSpace(state.Error),
+		FormAction:    p.LoginPath(),
+		UsernameLabel: copy.UsernameLabel,
+		UsernameValue: strings.TrimSpace(state.Username),
+		PasswordLabel: copy.PasswordLabel,
+		SubmitLabel:   copy.SubmitLabel,
+	}
 }
 
 func (p *Presenter) HealthPage(data source.HealthData, err error) views.HealthPageData {
@@ -286,6 +328,11 @@ func (p *Presenter) layout(title, active string) views.LayoutData {
 		BrandName:      p.content.Shell.BrandName,
 		NavItems:       navItems,
 		LanguageToggle: p.languageToggle(currentLocale),
+		LogoutAction: partials.LogoutActionData{
+			Enabled: p.authEnabled,
+			Action:  p.localizePath("/logout"),
+			Title:   p.content.Common.SignOut,
+		},
 		ThemeToggle: views.ThemeToggleData{
 			Label:              p.content.Common.ToggleTheme,
 			SwitchToDarkLabel:  p.content.Common.SwitchToDarkTheme,

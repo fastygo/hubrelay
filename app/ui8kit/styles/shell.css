@@ -115,11 +115,11 @@
   }
 
   .kit-header-action-btn {
-    @apply inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded border border-border px-2 text-foreground;
+    @apply inline-flex h-8 w-8 items-center justify-center gap-1 rounded border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
   }
 
   .kit-header-theme-btn {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded border border-border text-foreground;
+    @apply inline-flex h-8 w-8 items-center justify-center rounded border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
   }
 
   .kit-header-title {

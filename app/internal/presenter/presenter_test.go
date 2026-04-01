@@ -26,13 +26,28 @@ func TestAskPageUsesLocalizedPaths(t *testing.T) {
 	}
 
 	enPage := New(enCatalog, Config{
+		AuthEnabled:      true,
 		DefaultLocale:    content.DefaultLocale,
 		AvailableLocales: locales,
 		ToggleLocales:    locales[:2],
 		Catalogs:         catalogs,
 	}).AskPage(AskPageState{})
+	enPresenter := New(enCatalog, Config{
+		AuthEnabled:      true,
+		DefaultLocale:    content.DefaultLocale,
+		AvailableLocales: locales,
+		ToggleLocales:    locales[:2],
+		Catalogs:         catalogs,
+	})
+	enLogin := enPresenter.LoginPage(LoginPageState{})
 	if enPage.FormAction != "/ask" {
 		t.Fatalf("expected english form action /ask, got %q", enPage.FormAction)
+	}
+	if enLogin.FormAction != "/login" {
+		t.Fatalf("expected english login action /login, got %q", enLogin.FormAction)
+	}
+	if enPage.Layout.LogoutAction.Action != "/logout" {
+		t.Fatalf("expected english logout action /logout, got %q", enPage.Layout.LogoutAction.Action)
 	}
 	if enPage.StreamEndpoint != "/ask/stream" {
 		t.Fatalf("expected english stream endpoint /ask/stream, got %q", enPage.StreamEndpoint)
@@ -47,13 +62,25 @@ func TestAskPageUsesLocalizedPaths(t *testing.T) {
 	}
 
 	ruPage := New(ruCatalog, Config{
+		AuthEnabled:      true,
 		DefaultLocale:    content.DefaultLocale,
 		AvailableLocales: locales,
 		ToggleLocales:    locales[:2],
 		Catalogs:         catalogs,
 	}).AskPage(AskPageState{})
+	ruPresenter := New(ruCatalog, Config{
+		AuthEnabled:      true,
+		DefaultLocale:    content.DefaultLocale,
+		AvailableLocales: locales,
+		ToggleLocales:    locales[:2],
+		Catalogs:         catalogs,
+	})
+	ruLogin := ruPresenter.LoginPage(LoginPageState{})
 	if ruPage.FormAction != "/ask?lang=ru" {
 		t.Fatalf("expected russian form action /ask?lang=ru, got %q", ruPage.FormAction)
+	}
+	if ruLogin.FormAction != "/login?lang=ru" {
+		t.Fatalf("expected russian login action /login?lang=ru, got %q", ruLogin.FormAction)
 	}
 	if ruPage.StreamEndpoint != "/ask/stream?lang=ru" {
 		t.Fatalf("expected russian stream endpoint /ask/stream?lang=ru, got %q", ruPage.StreamEndpoint)
@@ -63,6 +90,9 @@ func TestAskPageUsesLocalizedPaths(t *testing.T) {
 	}
 	if ruPage.Layout.LanguageToggle.CurrentLabel != "RU" {
 		t.Fatalf("expected russian toggle label RU, got %q", ruPage.Layout.LanguageToggle.CurrentLabel)
+	}
+	if ruPage.Layout.LogoutAction.Action != "/logout?lang=ru" {
+		t.Fatalf("expected russian logout action /logout?lang=ru, got %q", ruPage.Layout.LogoutAction.Action)
 	}
 	if !ruPage.Layout.LanguageToggle.Enabled {
 		t.Fatal("expected language toggle enabled")
@@ -80,16 +110,31 @@ func TestAskPageUsesLocalizedPaths(t *testing.T) {
 	}
 
 	esPage := New(esCatalog, Config{
+		AuthEnabled:      true,
 		DefaultLocale:    content.DefaultLocale,
 		AvailableLocales: locales,
 		ToggleLocales:    locales[:2],
 		Catalogs:         catalogs,
 	}).AskPage(AskPageState{})
+	esPresenter := New(esCatalog, Config{
+		AuthEnabled:      true,
+		DefaultLocale:    content.DefaultLocale,
+		AvailableLocales: locales,
+		ToggleLocales:    locales[:2],
+		Catalogs:         catalogs,
+	})
+	esLogin := esPresenter.LoginPage(LoginPageState{})
 	if esPage.FormAction != "/ask?lang=es" {
 		t.Fatalf("expected spanish form action /ask?lang=es, got %q", esPage.FormAction)
 	}
+	if esLogin.FormAction != "/login?lang=es" {
+		t.Fatalf("expected spanish login action /login?lang=es, got %q", esLogin.FormAction)
+	}
 	if esPage.Layout.LanguageToggle.CurrentLabel != "ES" {
 		t.Fatalf("expected spanish toggle label ES, got %q", esPage.Layout.LanguageToggle.CurrentLabel)
+	}
+	if esPage.Layout.LogoutAction.Title != "Cerrar sesión" {
+		t.Fatalf("unexpected spanish logout title %q", esPage.Layout.LogoutAction.Title)
 	}
 	if esPage.Layout.ThemeToggle.SwitchToLightLabel != "Cambiar al tema claro" {
 		t.Fatalf("unexpected spanish theme light label %q", esPage.Layout.ThemeToggle.SwitchToLightLabel)

@@ -7,13 +7,14 @@ import (
 
 templ Layout(data LayoutData, headExtra templ.Component) {
 	@ui8layout.Shell(ui8layout.ShellProps{
-		Title:       data.Title,
-		Lang:        data.Locale,
-		BrandName:   data.BrandName,
-		Active:      data.Active,
-		NavItems:    data.NavItems,
-		HeadExtra:   layoutHeadExtra(headExtra),
-		HeaderExtra: partials.LanguageToggle(data.LanguageToggle),
+		Title:          data.Title,
+		Lang:           data.Locale,
+		BrandName:      data.BrandName,
+		Active:         data.Active,
+		NavItems:       data.NavItems,
+		HeadExtra:      layoutHeadExtra(headExtra),
+		HeaderExtra:    partials.LanguageToggle(data.LanguageToggle),
+		HeaderTrailing: partials.LogoutAction(data.LogoutAction),
 		ThemeToggle: ui8layout.ThemeToggleProps{
 			Label:              data.ThemeToggle.Label,
 			SwitchToDarkLabel:  data.ThemeToggle.SwitchToDarkLabel,

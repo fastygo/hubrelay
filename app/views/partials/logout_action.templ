@@ -1,0 +1,11 @@
+package partials
+
+templ LogoutAction(data LogoutActionData) {
+	if data.Enabled {
+		<form method="post" action={ data.Action } class="app-header-logout-form">
+			<button type="submit" id="app-logout-button" class="app-header-logout-btn" title={ data.Title } aria-label={ data.Title }>
+				<span class="latty latty-log-out h-4 w-4"></span>
+			</button>
+		</form>
+	}
+}

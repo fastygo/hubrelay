@@ -8,6 +8,7 @@ The development module currently uses a local `replace` for `github.com/fastygo/
 
 ## Features
 
+- Session-based operator login with in-memory cookies
 - Health and discovery view
 - Capabilities view
 - Ask page with SSE streaming
@@ -22,8 +23,15 @@ The development module currently uses a local `replace` for `github.com/fastygo/
 - `HUBRELAY_BASE_URL=http://127.0.0.1:5500`
 - `HUBRELAY_SOCKET_PATH=/run/hubrelay/hubrelay.sock`
 - `APP_BIND=0.0.0.0:8080`
+- `APP_ADMIN_USER=admin`
+- `APP_ADMIN_PASS=admin@123`
+- `APP_AUTH_DISABLED=false`
 
 `APP_DATA_SOURCE=live` is the default and talks to a running HubRelay instance.
+
+When auth is enabled, browser requests are redirected to `/login` and API-style requests can still use HTTP Basic Auth. A successful Basic Auth request also creates a browser session cookie, matching the GUI dashboard flow.
+
+For compatibility with the existing GUI environment, `PAAS_ADMIN_USER`, `PAAS_ADMIN_PASS`, and `DASHBOARD_AUTH_DISABLED` are also accepted as fallbacks.
 
 `APP_DATA_SOURCE=fixture` loads page copy from locale fixtures and demo payloads from locale-specific `mocks` directories, which is useful for preview mode and UI iteration without a live backend.
 
@@ -58,6 +66,12 @@ For fixture-backed preview mode:
 
 ```bash
 APP_DATA_SOURCE=fixture go run ./cmd/server
+```
+
+To iterate on the UI without logging in:
+
+```bash
+APP_AUTH_DISABLED=true go run ./cmd/server
 ```
 
 ## Docker

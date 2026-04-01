@@ -97,6 +97,10 @@
   code, pre, kbd, samp {
     font-family: var(--font-mono);
   }
+
+  button {
+    @apply cursor-pointer;
+  }
 }
 
 html {

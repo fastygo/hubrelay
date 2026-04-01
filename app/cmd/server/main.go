@@ -58,9 +58,12 @@ func main() {
 		log.Fatalf("unsupported data source %q", cfg.DataSource)
 	}
 
-	app := handlers.New(catalogs, locales, liveSource, fixtureSources)
+	auth := middleware.NewSessionAuth(cfg.Auth.AdminUser, cfg.Auth.AdminPass)
+	app := handlers.New(catalogs, locales, liveSource, fixtureSources, auth, cfg.Auth.Disabled)
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/login", app.Login)
+	mux.HandleFunc("/logout", app.Logout)
 	mux.HandleFunc("/", app.Health)
 	mux.HandleFunc("/capabilities", app.Capabilities)
 	mux.HandleFunc("/ask", func(w http.ResponseWriter, r *http.Request) {
@@ -78,9 +81,14 @@ func main() {
 	mux.HandleFunc("/audit", app.Audit)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
+	next := middleware.WithPrincipal(mux)
+	if !cfg.Auth.Disabled {
+		next = auth.Middleware()(next)
+	}
+
 	server := &http.Server{
 		Addr:              cfg.AppBind,
-		Handler:           middleware.WithPrincipal(mux),
+		Handler:           next,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -89,6 +97,11 @@ func main() {
 
 	go func() {
 		log.Printf("hubrelay dashboard listening on %s", cfg.AppBind)
+		if cfg.Auth.Disabled {
+			log.Printf("hubrelay dashboard auth disabled")
+		} else {
+			log.Printf("hubrelay dashboard login at http://%s/login", cfg.AppBind)
+		}
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", err)
 		}

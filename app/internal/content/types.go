@@ -4,6 +4,7 @@ type Catalog struct {
 	Locale       string
 	Common       CommonContent
 	Shell        ShellContent
+	Login        LoginContent
 	Health       HealthContent
 	Capabilities CapabilitiesContent
 	Ask          AskContent
@@ -16,6 +17,7 @@ type CommonContent struct {
 	LocaleName         string `json:"localeName"`
 	SwitchLanguage     string `json:"switchLanguage"`
 	ToggleTheme        string `json:"toggleTheme"`
+	SignOut            string `json:"signOut"`
 	SwitchToDarkTheme  string `json:"switchToDarkTheme"`
 	SwitchToLightTheme string `json:"switchToLightTheme"`
 	BoolTrue           string `json:"boolTrue"`
@@ -41,6 +43,20 @@ type PageHeaderContent struct {
 
 type PageErrors struct {
 	Default string `json:"default"`
+}
+
+type LoginContent struct {
+	Title         string             `json:"title"`
+	Header        PageHeaderContent  `json:"header"`
+	UsernameLabel string             `json:"usernameLabel"`
+	PasswordLabel string             `json:"passwordLabel"`
+	SubmitLabel   string             `json:"submitLabel"`
+	Errors        LoginErrorsContent `json:"errors"`
+}
+
+type LoginErrorsContent struct {
+	InvalidForm        string `json:"invalidForm"`
+	InvalidCredentials string `json:"invalidCredentials"`
 }
 
 type HealthContent struct {

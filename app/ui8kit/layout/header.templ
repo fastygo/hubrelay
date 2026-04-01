@@ -29,6 +29,9 @@ templ Header(props HeaderProps) {
 			>
 				<span id="theme-toggle-icon" class="latty latty-moon h-4 w-4"></span>
 			</button>
+			if props.Trailing != nil {
+				@props.Trailing
+			}
 		</div>
 	</header>
 }
