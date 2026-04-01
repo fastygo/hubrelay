@@ -1,0 +1,23 @@
+{
+  "title": "Egress",
+  "activePath": "/egress",
+  "header": {
+    "title": "Egress Status",
+    "description": "Current gateway health, priorities, and active failover state."
+  },
+  "tableHeaders": {
+    "gateway": "Gateway",
+    "interface": "Interface",
+    "priority": "Priority",
+    "healthy": "Healthy",
+    "level": "Level",
+    "checks": "Checks",
+    "active": "Active",
+    "lastCheck": "Last check",
+    "lastTransition": "Last transition",
+    "lastError": "Last error"
+  },
+  "errors": {
+    "default": "Unable to load egress status."
+  }
+}

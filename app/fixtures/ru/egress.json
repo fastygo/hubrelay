@@ -1,0 +1,23 @@
+{
+  "title": "Выход",
+  "activePath": "/egress",
+  "header": {
+    "title": "Статус egress",
+    "description": "Текущее состояние gateway, приоритеты и активный failover."
+  },
+  "tableHeaders": {
+    "gateway": "Шлюз",
+    "interface": "Интерфейс",
+    "priority": "Приоритет",
+    "healthy": "Исправен",
+    "level": "Уровень",
+    "checks": "Проверки",
+    "active": "Активен",
+    "lastCheck": "Последняя проверка",
+    "lastTransition": "Последнее переключение",
+    "lastError": "Последняя ошибка"
+  },
+  "errors": {
+    "default": "Не удалось загрузить статус egress."
+  }
+}

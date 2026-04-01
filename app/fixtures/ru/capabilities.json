@@ -1,0 +1,30 @@
+{
+  "title": "Возможности",
+  "activePath": "/capabilities",
+  "header": {
+    "title": "Возможности",
+    "description": "Неизменяемые возможности профиля HubRelay, доступные через SDK."
+  },
+  "kpiLabels": {
+    "profileID": "ID профиля",
+    "displayName": "Отображаемое имя",
+    "aiModel": "Модель ИИ"
+  },
+  "flagsTitle": "Флаги",
+  "flagLabels": {
+    "httpBind": "HTTP bind",
+    "aiEnabled": "ИИ включен",
+    "aiProvider": "Провайдер ИИ",
+    "aiApiMode": "Режим API ИИ",
+    "aiBaseURL": "Базовый URL ИИ",
+    "aiHasApiKey": "Есть API-ключ ИИ",
+    "chatHistory": "История чата",
+    "emailEnabled": "Email включен",
+    "proxySession": "Сессия proxy",
+    "proxyForce": "Принудительный proxy"
+  },
+  "capabilityListTitle": "Список возможностей",
+  "errors": {
+    "default": "Не удалось загрузить возможности."
+  }
+}

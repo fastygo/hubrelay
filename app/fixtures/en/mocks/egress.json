@@ -1,0 +1,58 @@
+{
+  "gateways": [
+    {
+      "name": "wg-primary",
+      "interface": "wg0",
+      "priority": 100,
+      "enabled": true,
+      "healthy": true,
+      "healthLevel": "business",
+      "levels": {
+        "wg": {
+          "ok": true,
+          "checkedAt": "2026-04-01T10:00:00Z"
+        },
+        "transport": {
+          "ok": true,
+          "checkedAt": "2026-04-01T10:00:00Z"
+        },
+        "business": {
+          "ok": true,
+          "checkedAt": "2026-04-01T10:00:00Z"
+        }
+      },
+      "lastCheckAt": "2026-04-01T10:00:00Z",
+      "lastTransitionAt": "2026-04-01T09:45:00Z",
+      "lastError": "",
+      "active": true
+    },
+    {
+      "name": "wg-backup",
+      "interface": "wg1",
+      "priority": 200,
+      "enabled": true,
+      "healthy": false,
+      "healthLevel": "transport",
+      "levels": {
+        "wg": {
+          "ok": true,
+          "checkedAt": "2026-04-01T10:00:00Z"
+        },
+        "transport": {
+          "ok": false,
+          "checkedAt": "2026-04-01T10:00:00Z",
+          "error": "dial timeout"
+        },
+        "business": {
+          "ok": false,
+          "checkedAt": "2026-04-01T10:00:00Z",
+          "error": "request skipped"
+        }
+      },
+      "lastCheckAt": "2026-04-01T10:00:00Z",
+      "lastTransitionAt": "2026-04-01T09:10:00Z",
+      "lastError": "transport timeout",
+      "active": false
+    }
+  ]
+}

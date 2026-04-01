@@ -1,0 +1,42 @@
+{
+  "title": "Pregunta",
+  "activePath": "/ask",
+  "header": {
+    "title": "Pregunta / Streaming",
+    "description": "Ejecuta el comando ask desde el dashboard. JavaScript usa SSE y el POST ofrece un modo sincronico."
+  },
+  "fields": {
+    "prompt": {
+      "label": "Pregunta",
+      "placeholder": "Preguntar a HubRelay..."
+    },
+    "model": {
+      "label": "Modelo",
+      "placeholder": "opcional"
+    }
+  },
+  "actions": {
+    "streamSubmit": "Iniciar flujo SSE",
+    "syncSubmit": "Ejecutar en modo sincronico"
+  },
+  "stream": {
+    "title": "Salida en streaming",
+    "initialStatus": "idle",
+    "statusSync": "sync",
+    "statusPromptRequired": "falta la pregunta",
+    "statusConnecting": "conectando",
+    "statusStreaming": "streaming",
+    "statusDone": "listo",
+    "statusError": "error",
+    "defaultError": "fallo del stream"
+  },
+  "result": {
+    "title": "Resultado sincronico",
+    "statusLabel": "Estado",
+    "messageLabel": "Mensaje"
+  },
+  "errors": {
+    "invalidForm": "envio de formulario invalido",
+    "promptRequired": "la pregunta es obligatoria"
+  }
+}

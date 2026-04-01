@@ -1,0 +1,11 @@
+{
+  "localeCode": "ES",
+  "localeName": "Espanol",
+  "switchLanguage": "Cambiar idioma",
+  "toggleTheme": "Cambiar tema",
+  "switchToDarkTheme": "Cambiar al tema oscuro",
+  "switchToLightTheme": "Cambiar al tema claro",
+  "boolTrue": "si",
+  "boolFalse": "no",
+  "emptyValue": "-"
+}

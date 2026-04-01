@@ -1,0 +1,38 @@
+{
+  "result": {
+    "status": "ok",
+    "message": "ask command completed",
+    "data": {
+      "answer": "This is a fixture-backed HubRelay answer for preview mode.",
+      "model": "gpt-4.1-mini",
+      "source": "fixture"
+    }
+  },
+  "stream": {
+    "chunks": [
+      {
+        "delta": "This "
+      },
+      {
+        "delta": "is "
+      },
+      {
+        "delta": "a "
+      },
+      {
+        "delta": "fixture "
+      },
+      {
+        "delta": "stream."
+      }
+    ],
+    "result": {
+      "status": "ok",
+      "message": "stream completed",
+      "data": {
+        "answer": "This is a fixture stream.",
+        "source": "fixture"
+      }
+    }
+  }
+}

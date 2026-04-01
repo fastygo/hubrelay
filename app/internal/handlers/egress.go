@@ -7,18 +7,10 @@ import (
 )
 
 func (a *App) Egress(w http.ResponseWriter, r *http.Request) {
+	runtime := a.runtimeFor(r)
 	ctx, cancel := requestContext(r)
 	defer cancel()
 
-	response, err := a.Relay.EgressStatus(ctx)
-	if err != nil {
-		render(w, r, http.StatusOK, views.EgressPage(views.EgressPageData{
-			Error: err.Error(),
-		}))
-		return
-	}
-
-	render(w, r, http.StatusOK, views.EgressPage(views.EgressPageData{
-		Gateways: response.Gateways,
-	}))
+	data, err := runtime.Source.Egress(ctx)
+	render(w, r, http.StatusOK, views.EgressPage(runtime.Presenter.EgressPage(data, err)))
 }

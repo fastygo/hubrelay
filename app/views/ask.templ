@@ -7,11 +7,11 @@ import (
 )
 
 templ AskPage(data AskPageData) {
-	@Layout("Ask", "/ask", askPageHead()) {
+	@Layout(data.Layout, askPageHead()) {
 		<div class="app-page">
 			<div class="app-page-header">
-				@ui.Title(ui.TitleProps{Order: 1}, "Ask / Streaming")
-				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Run the ask command through the dashboard. JavaScript uses SSE, while the POST action provides a synchronous fallback.")
+				@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
 			</div>
 
 			if data.Error != "" {
@@ -22,49 +22,47 @@ templ AskPage(data AskPageData) {
 
 			<div class="app-two-col">
 				<div class={ utils.CardVariant("default") }>
-					<form id="ask-form" method="post" action="/ask" class="app-form">
+					<form id="ask-form" method="post" action={ data.FormAction } class="app-form" data-stream-endpoint={ data.StreamEndpoint }>
 						<div class="space-y-2">
-							<label for="prompt-input" class="form-label">Prompt</label>
+							<label for={ data.PromptField.ID } class="form-label">{ data.PromptField.Label }</label>
 							@ui.Field(ui.FieldProps{
-								ID:          "prompt-input",
-								Name:        "prompt",
+								ID:          data.PromptField.ID,
+								Name:        data.PromptField.Name,
 								Component:   "textarea",
 								Rows:        10,
-								Placeholder: "Ask HubRelay...",
-								Value:       data.Prompt,
+								Placeholder: data.PromptField.Placeholder,
+								Value:       data.PromptField.Value,
 							})
 						</div>
 						<div class="space-y-2">
-							<label for="model-input" class="form-label">Model override</label>
+							<label for={ data.ModelField.ID } class="form-label">{ data.ModelField.Label }</label>
 							@ui.Field(ui.FieldProps{
-								ID:          "model-input",
-								Name:        "model",
-								Placeholder: "optional",
-								Value:       data.Model,
+								ID:          data.ModelField.ID,
+								Name:        data.ModelField.Name,
+								Placeholder: data.ModelField.Placeholder,
+								Value:       data.ModelField.Value,
 							})
 						</div>
 						<div class="app-actions">
-							@ui.Button(ui.ButtonProps{Type: "submit"}, "Start SSE stream")
+							@ui.Button(ui.ButtonProps{Type: "submit"}, data.Actions.StreamSubmitLabel)
 							<button type="submit" name="mode" value="sync" class="app-button-outline">
-								Run synchronously
+								{ data.Actions.SyncSubmitLabel }
 							</button>
 						</div>
 					</form>
 				</div>
 
-				@partials.StreamOutput()
+				@partials.StreamOutput(data.Stream)
 			</div>
 
 			if data.Result != nil {
 				<div class={ utils.CardVariant("default") }>
-					@ui.Title(ui.TitleProps{Order: 3}, "Synchronous Result")
+					@ui.Title(ui.TitleProps{Order: 3}, data.Result.Title)
 					<div class="kit-table-wrap">
 						<table class="kit-table">
 							<tbody class="table-body">
-								<tr><td class="kit-table-cell-label">Status</td><td class="kit-table-cell">{ data.Result.Status }</td></tr>
-								<tr><td class="kit-table-cell-label">Message</td><td class="kit-table-cell">{ data.Result.Message }</td></tr>
-								for key, value := range data.Result.Data {
-									<tr><td class="kit-table-cell-label">{ key }</td><td class="kit-table-cell">{ stringify(value) }</td></tr>
+								for _, row := range data.Result.Rows {
+									<tr><td class="kit-table-cell-label">{ row.Label }</td><td class="kit-table-cell">{ row.Value }</td></tr>
 								}
 							</tbody>
 						</table>

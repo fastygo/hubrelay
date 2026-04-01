@@ -1,0 +1,19 @@
+{
+  "title": "Audit",
+  "activePath": "/audit",
+  "header": {
+    "title": "Audit",
+    "description": "Recent command executions recorded by HubRelay."
+  },
+  "tableHeaders": {
+    "time": "Time",
+    "command": "Command",
+    "principal": "Principal",
+    "transport": "Transport",
+    "outcome": "Outcome",
+    "message": "Message"
+  },
+  "errors": {
+    "default": "Unable to load audit entries."
+  }
+}

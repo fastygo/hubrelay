@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/a-h/templ"
 	"github.com/fastygo/ui8kit/layout"
 )
 
@@ -36,15 +37,30 @@ func assertNotContains(t *testing.T, html, unwanted string) {
 }
 
 func TestHeaderRender(t *testing.T) {
-	h := layout.Header(layout.HeaderProps{Title: "My Page"})
+	h := layout.Header(layout.HeaderProps{
+		Title: "My Page",
+		Extra: templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
+			_, err := io.WriteString(w, `<button id="header-extra">extra</button>`)
+			return err
+		}),
+		ThemeToggle: layout.ThemeToggleProps{
+			Label:              "Change theme",
+			SwitchToDarkLabel:  "Dark mode",
+			SwitchToLightLabel: "Light mode",
+		},
+	})
 	html := render(t, h)
 	assertContains(t, html, "My Page")
 	assertContains(t, html, "<header")
 	assertContains(t, html, "kit-header")
-	assertContains(t, html, "ui8kitToggleTheme")
 	assertContains(t, html, "ui8kit-theme-toggle")
 	assertContains(t, html, "aria-controls=\"ui8kit-mobile-sheet-panel\"")
 	assertContains(t, html, "for=\"ui8kit-mobile-sheet\"")
+	assertContains(t, html, "header-extra")
+	assertContains(t, html, "data-switch-to-dark-label=\"Dark mode\"")
+	assertContains(t, html, "data-switch-to-light-label=\"Light mode\"")
+	assertContains(t, html, "aria-label=\"Change theme\"")
+	assertNotContains(t, html, "onclick=\"ui8kitToggleTheme()\"")
 }
 
 func TestSidebarRender(t *testing.T) {
@@ -72,12 +88,23 @@ func TestShellRender(t *testing.T) {
 	nav := []layout.NavItem{{Path: "/", Label: "Home", Icon: "box"}}
 	sh := layout.Shell(layout.ShellProps{
 		Title:     "Test App",
+		Lang:      "ru",
 		BrandName: "Brand",
 		Active:    "/",
 		NavItems:  nav,
+		HeaderExtra: templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
+			_, err := io.WriteString(w, `<button id="shell-extra">shell</button>`)
+			return err
+		}),
+		ThemeToggle: layout.ThemeToggleProps{
+			Label:              "Theme",
+			SwitchToDarkLabel:  "To dark",
+			SwitchToLightLabel: "To light",
+		},
 	})
 	html := render(t, sh)
 	assertContains(t, html, "<!doctype html>")
+	assertContains(t, html, "<html lang=\"ru\">")
 	assertContains(t, html, "<title>Test App</title>")
 	assertContains(t, html, "Brand")
 	assertContains(t, html, "Home")
@@ -88,8 +115,11 @@ func TestShellRender(t *testing.T) {
 	assertContains(t, html, "kit-shell-mobile-sheet-panel")
 	assertNotContains(t, html, "popover=")
 	assertNotContains(t, html, "ui8kitOpenSidebar")
+	assertNotContains(t, html, "ui8kitToggleTheme")
 	assertContains(t, html, "kit-shell-body")
 	assertContains(t, html, "kit-shell-main")
+	assertContains(t, html, "shell-extra")
+	assertContains(t, html, "data-switch-to-dark-label=\"To dark\"")
 }
 
 func TestShellDefaultBrand(t *testing.T) {

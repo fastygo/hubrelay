@@ -6,11 +6,11 @@ import (
 )
 
 templ EgressPage(data EgressPageData) {
-	@Layout("Egress", "/egress", nil) {
+	@Layout(data.Layout, nil) {
 		<div class="app-page">
 			<div class="app-page-header">
-				@ui.Title(ui.TitleProps{Order: 1}, "Egress Status")
-				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Current gateway health, priorities, and active failover state.")
+				@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
 			</div>
 
 			if data.Error != "" {
@@ -24,30 +24,30 @@ templ EgressPage(data EgressPageData) {
 					<table class="kit-table">
 						<thead>
 							<tr class="kit-table-head-row">
-								<th class="kit-table-head-cell">Gateway</th>
-								<th class="kit-table-head-cell">Interface</th>
-								<th class="kit-table-head-cell">Priority</th>
-								<th class="kit-table-head-cell">Healthy</th>
-								<th class="kit-table-head-cell">Level</th>
-								<th class="kit-table-head-cell">Checks</th>
-								<th class="kit-table-head-cell">Active</th>
-								<th class="kit-table-head-cell">Last check</th>
-								<th class="kit-table-head-cell">Last transition</th>
-								<th class="kit-table-cell">Last error</th>
+								<th class="kit-table-head-cell">{ data.Headers.Gateway }</th>
+								<th class="kit-table-head-cell">{ data.Headers.Interface }</th>
+								<th class="kit-table-head-cell">{ data.Headers.Priority }</th>
+								<th class="kit-table-head-cell">{ data.Headers.Healthy }</th>
+								<th class="kit-table-head-cell">{ data.Headers.Level }</th>
+								<th class="kit-table-head-cell">{ data.Headers.Checks }</th>
+								<th class="kit-table-head-cell">{ data.Headers.Active }</th>
+								<th class="kit-table-head-cell">{ data.Headers.LastCheck }</th>
+								<th class="kit-table-head-cell">{ data.Headers.LastTransition }</th>
+								<th class="kit-table-cell">{ data.Headers.LastError }</th>
 							</tr>
 						</thead>
 						<tbody class="table-body">
-							for _, gateway := range data.Gateways {
+							for _, gateway := range data.Rows {
 								<tr>
-									<td class="kit-table-cell-label">{ gateway.Name }</td>
+									<td class="kit-table-cell-label">{ gateway.Gateway }</td>
 									<td class="kit-table-cell-label">{ gateway.Interface }</td>
 									<td class="kit-table-cell-label">{ gateway.Priority }</td>
-									<td class="kit-table-cell-label">{ boolLabel(gateway.Healthy) }</td>
-									<td class="kit-table-cell-label">{ gateway.HealthLevel }</td>
-									<td class="kit-table-cell-label">{ gatewaySummary(gateway) }</td>
-									<td class="kit-table-cell-label">{ boolLabel(gateway.Active) }</td>
-									<td class="kit-table-cell-label">{ formatTime(gateway.LastCheckAt) }</td>
-									<td class="kit-table-cell-label">{ formatTime(gateway.LastTransitionAt) }</td>
+									<td class="kit-table-cell-label">{ gateway.Healthy }</td>
+									<td class="kit-table-cell-label">{ gateway.Level }</td>
+									<td class="kit-table-cell-label">{ gateway.Checks }</td>
+									<td class="kit-table-cell-label">{ gateway.Active }</td>
+									<td class="kit-table-cell-label">{ gateway.LastCheck }</td>
+									<td class="kit-table-cell-label">{ gateway.LastTransition }</td>
 									<td class="kit-table-cell">{ gateway.LastError }</td>
 								</tr>
 							}

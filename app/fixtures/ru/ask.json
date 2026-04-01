@@ -1,0 +1,42 @@
+{
+  "title": "Запрос",
+  "activePath": "/ask",
+  "header": {
+    "title": "Запрос / Поток",
+    "description": "Выполните команду ask через dashboard. JavaScript использует SSE, а POST-форма предоставляет синхронный fallback."
+  },
+  "fields": {
+    "prompt": {
+      "label": "Запрос",
+      "placeholder": "Спросить HubRelay..."
+    },
+    "model": {
+      "label": "Переопределение модели",
+      "placeholder": "необязательно"
+    }
+  },
+  "actions": {
+    "streamSubmit": "Запустить SSE-поток",
+    "syncSubmit": "Выполнить синхронно"
+  },
+  "stream": {
+    "title": "Потоковый вывод",
+    "initialStatus": "ожидание",
+    "statusSync": "sync",
+    "statusPromptRequired": "нужен запрос",
+    "statusConnecting": "подключение",
+    "statusStreaming": "поток",
+    "statusDone": "готово",
+    "statusError": "ошибка",
+    "defaultError": "не удалось получить поток"
+  },
+  "result": {
+    "title": "Синхронный результат",
+    "statusLabel": "Статус",
+    "messageLabel": "Сообщение"
+  },
+  "errors": {
+    "invalidForm": "некорректная отправка формы",
+    "promptRequired": "поле запроса обязательно"
+  }
+}

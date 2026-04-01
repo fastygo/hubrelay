@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"hubrelay-dashboard/internal/config"
+	"hubrelay-dashboard/internal/content"
 	"hubrelay-dashboard/internal/handlers"
 	"hubrelay-dashboard/internal/middleware"
 	"hubrelay-dashboard/internal/relay"
+	"hubrelay-dashboard/internal/source"
 )
 
 func main() {
@@ -22,13 +24,41 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	client, err := relay.New(cfg)
+	locales, err := content.AvailableLocales()
 	if err != nil {
-		log.Fatalf("create relay client: %v", err)
+		log.Fatalf("discover locales: %v", err)
 	}
-	defer client.Close()
+	catalogs := make(map[string]content.Catalog, len(locales))
+	for _, locale := range locales {
+		catalogs[locale], err = content.Load(locale)
+		if err != nil {
+			log.Fatalf("load content for %s: %v", locale, err)
+		}
+	}
 
-	app := handlers.New(client)
+	var liveSource source.Source
+	fixtureSources := map[string]source.Source{}
+	var client *relay.Client
+	switch cfg.DataSource {
+	case config.DataSourceFixture:
+		for _, locale := range locales {
+			fixtureSources[locale], err = source.NewFixture(locale)
+			if err != nil {
+				log.Fatalf("create fixture source for %s: %v", locale, err)
+			}
+		}
+	case config.DataSourceLive:
+		client, err = relay.New(cfg)
+		if err != nil {
+			log.Fatalf("create relay client: %v", err)
+		}
+		defer client.Close()
+		liveSource = source.NewLive(client)
+	default:
+		log.Fatalf("unsupported data source %q", cfg.DataSource)
+	}
+
+	app := handlers.New(catalogs, locales, liveSource, fixtureSources)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", app.Health)

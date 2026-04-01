@@ -17,10 +17,29 @@ The development module currently uses a local `replace` for `github.com/fastygo/
 
 ## Configuration
 
+- `APP_DATA_SOURCE=live|fixture`
 - `HUBRELAY_TRANSPORT=http|unix`
 - `HUBRELAY_BASE_URL=http://127.0.0.1:5500`
 - `HUBRELAY_SOCKET_PATH=/run/hubrelay/hubrelay.sock`
 - `APP_BIND=0.0.0.0:8080`
+
+`APP_DATA_SOURCE=live` is the default and talks to a running HubRelay instance.
+
+`APP_DATA_SOURCE=fixture` loads page copy from locale fixtures and demo payloads from locale-specific `mocks` directories, which is useful for preview mode and UI iteration without a live backend.
+
+Locales are discovered from `app/fixtures/*` directories at startup.
+
+English is always the default locale. The language toggle stores the chosen locale in browser `localStorage` and synchronizes it with the `lang` query parameter for server-rendered pages.
+
+The current MVP toggle switches between the first two discovered locales, with English forced to the first position when present.
+
+`fixtures/es` is included as a proof-of-concept locale to verify that locale discovery no longer depends on hardcoded `ru` logic.
+
+On the first visit, when no locale is stored yet, the shell script also tries to match the user's browser locale against the discovered fixture locales.
+
+## Docs
+
+- [Fixtures and runtime modes](docs/fixtures-and-runtime.md)
 
 ## Development
 
@@ -33,6 +52,12 @@ npm run sync:ui8kit
 npm run build:css
 templ generate ./...
 go run ./cmd/server
+```
+
+For fixture-backed preview mode:
+
+```bash
+APP_DATA_SOURCE=fixture go run ./cmd/server
 ```
 
 ## Docker

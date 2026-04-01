@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "command": "ask",
+      "principal": "dashboard",
+      "transport": "http",
+      "outcome": "ok",
+      "message": "stream completed",
+      "at": "2026-04-01T10:05:00Z"
+    },
+    {
+      "command": "capabilities",
+      "principal": "dashboard",
+      "transport": "http",
+      "outcome": "ok",
+      "message": "capabilities loaded",
+      "at": "2026-04-01T09:50:00Z"
+    },
+    {
+      "command": "egress",
+      "principal": "dashboard",
+      "transport": "unix",
+      "outcome": "error",
+      "message": "transport timeout on backup gateway",
+      "at": "2026-04-01T09:15:00Z"
+    }
+  ]
+}

@@ -9,17 +9,28 @@
 
   ready(function () {
     var form = document.getElementById("ask-form");
+    var panel = document.getElementById("stream-panel");
     var output = document.getElementById("stream-output");
     var result = document.getElementById("stream-result");
     var status = document.getElementById("stream-status");
     var prompt = document.getElementById("prompt-input");
     var model = document.getElementById("model-input");
 
-    if (!form || !output || !result || !status || !prompt) {
+    if (!form || !panel || !output || !result || !status || !prompt) {
       return;
     }
 
     var activeSource = null;
+    var copy = {
+      idle: panel.dataset.statusIdle || "idle",
+      sync: panel.dataset.statusSync || "sync",
+      promptRequired: panel.dataset.statusPromptRequired || "prompt required",
+      connecting: panel.dataset.statusConnecting || "connecting",
+      streaming: panel.dataset.statusStreaming || "streaming",
+      done: panel.dataset.statusDone || "done",
+      error: panel.dataset.statusError || "error",
+      defaultError: panel.dataset.defaultError || "stream failed"
+    };
 
     function closeSource() {
       if (activeSource) {
@@ -36,7 +47,7 @@
       var submitter = event.submitter;
       if (submitter && submitter.value === "sync") {
         closeSource();
-        setStatus("sync");
+        setStatus(copy.sync);
         return;
       }
 
@@ -44,7 +55,7 @@
 
       var promptValue = prompt.value.trim();
       if (!promptValue) {
-        setStatus("prompt required");
+        setStatus(copy.promptRequired);
         return;
       }
 
@@ -52,7 +63,7 @@
       output.textContent = "";
       result.classList.add("hidden");
       result.textContent = "";
-      setStatus("connecting");
+      setStatus(copy.connecting);
 
       var params = new URLSearchParams();
       params.set("prompt", promptValue);
@@ -60,10 +71,12 @@
         params.set("model", model.value.trim());
       }
 
-      activeSource = new EventSource("/ask/stream?" + params.toString());
+      var streamEndpoint = form.dataset.streamEndpoint || "/ask/stream";
+      var separator = streamEndpoint.indexOf("?") === -1 ? "?" : "&";
+      activeSource = new EventSource(streamEndpoint + separator + params.toString());
 
       activeSource.addEventListener("chunk", function (message) {
-        setStatus("streaming");
+        setStatus(copy.streaming);
         try {
           var payload = JSON.parse(message.data);
           output.textContent += payload.delta || "";
@@ -74,16 +87,16 @@
 
       activeSource.addEventListener("done", function (message) {
         closeSource();
-        setStatus("done");
+        setStatus(copy.done);
         result.classList.remove("hidden");
         result.textContent = message.data;
       });
 
       activeSource.addEventListener("error", function (message) {
         closeSource();
-        setStatus("error");
+        setStatus(copy.error);
         result.classList.remove("hidden");
-        result.textContent = message.data || "stream failed";
+        result.textContent = message.data || copy.defaultError;
       });
     });
   });

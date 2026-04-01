@@ -1,0 +1,22 @@
+{
+  "title": "Health",
+  "activePath": "/",
+  "header": {
+    "title": "HubRelay Health",
+    "description": "Discovery and adapter health for the connected HubRelay instance."
+  },
+  "kpiLabels": {
+    "service": "Service",
+    "profile": "Profile",
+    "discoveryStatus": "Discovery Status",
+    "adapterStatus": "Adapter Status"
+  },
+  "detailsTitle": "Adapter Details",
+  "detailLabels": {
+    "adapter": "Adapter",
+    "profile": "Profile"
+  },
+  "errors": {
+    "default": "Unable to load health data."
+  }
+}

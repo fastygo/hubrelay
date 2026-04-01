@@ -1,0 +1,23 @@
+{
+  "title": "Egreso",
+  "activePath": "/egress",
+  "header": {
+    "title": "Estado de egreso",
+    "description": "Salud actual de gateways, prioridades y estado activo de failover."
+  },
+  "tableHeaders": {
+    "gateway": "Gateway",
+    "interface": "Interfaz",
+    "priority": "Prioridad",
+    "healthy": "Saludable",
+    "level": "Nivel",
+    "checks": "Checks",
+    "active": "Activo",
+    "lastCheck": "Ultima verificacion",
+    "lastTransition": "Ultima transicion",
+    "lastError": "Ultimo error"
+  },
+  "errors": {
+    "default": "No se pudo cargar el estado de egreso."
+  }
+}

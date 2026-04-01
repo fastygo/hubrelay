@@ -1,0 +1,30 @@
+{
+  "title": "Capacidades",
+  "activePath": "/capabilities",
+  "header": {
+    "title": "Capacidades",
+    "description": "Capacidades inmutables del perfil de HubRelay expuestas a traves del SDK."
+  },
+  "kpiLabels": {
+    "profileID": "ID del perfil",
+    "displayName": "Nombre visible",
+    "aiModel": "Modelo de IA"
+  },
+  "flagsTitle": "Indicadores",
+  "flagLabels": {
+    "httpBind": "HTTP bind",
+    "aiEnabled": "IA habilitada",
+    "aiProvider": "Proveedor de IA",
+    "aiApiMode": "Modo API de IA",
+    "aiBaseURL": "URL base de IA",
+    "aiHasApiKey": "IA con clave API",
+    "chatHistory": "Historial de chat",
+    "emailEnabled": "Email habilitado",
+    "proxySession": "Sesion proxy",
+    "proxyForce": "Proxy forzado"
+  },
+  "capabilityListTitle": "Lista de capacidades",
+  "errors": {
+    "default": "No se pudieron cargar las capacidades."
+  }
+}

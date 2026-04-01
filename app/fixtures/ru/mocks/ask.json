@@ -1,0 +1,32 @@
+{
+  "result": {
+    "status": "ok",
+    "message": "команда ask завершена",
+    "data": {
+      "answer": "Это fixture-ответ HubRelay для режима предпросмотра.",
+      "model": "gpt-4.1-mini",
+      "source": "fixture"
+    }
+  },
+  "stream": {
+    "chunks": [
+      {
+        "delta": "Это "
+      },
+      {
+        "delta": "fixture "
+      },
+      {
+        "delta": "поток."
+      }
+    ],
+    "result": {
+      "status": "ok",
+      "message": "поток завершен",
+      "data": {
+        "answer": "Это fixture-поток.",
+        "source": "fixture"
+      }
+    }
+  }
+}

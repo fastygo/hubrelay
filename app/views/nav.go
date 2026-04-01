@@ -5,22 +5,23 @@ import (
 	"io"
 
 	"github.com/a-h/templ"
-	"github.com/fastygo/ui8kit/layout"
 )
-
-func navItems() []layout.NavItem {
-	return []layout.NavItem{
-		{Path: "/", Label: "Health", Icon: "server"},
-		{Path: "/capabilities", Label: "Capabilities", Icon: "sparkles"},
-		{Path: "/ask", Label: "Ask", Icon: "message-circle"},
-		{Path: "/egress", Label: "Egress", Icon: "shield"},
-		{Path: "/audit", Label: "Audit", Icon: "history"},
-	}
-}
 
 func askPageHead() templ.Component {
 	return templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
 		_, err := io.WriteString(w, `<script src="/static/js/stream.js" defer></script>`)
 		return err
+	})
+}
+
+func layoutHeadExtra(extra templ.Component) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		if _, err := io.WriteString(w, `<script src="/static/js/app-shell.js" defer></script>`); err != nil {
+			return err
+		}
+		if extra == nil {
+			return nil
+		}
+		return extra.Render(ctx, w)
 	})
 }

@@ -1,0 +1,12 @@
+{
+  "discovery": {
+    "service": "hubrelay",
+    "profile": "default",
+    "status": "ok"
+  },
+  "health": {
+    "status": "ok",
+    "adapter": "openai",
+    "profile": "default"
+  }
+}

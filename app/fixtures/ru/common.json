@@ -1,0 +1,11 @@
+{
+  "localeCode": "RU",
+  "localeName": "Русский",
+  "switchLanguage": "Сменить язык",
+  "toggleTheme": "Сменить тему",
+  "switchToDarkTheme": "Переключить на темную тему",
+  "switchToLightTheme": "Переключить на светлую тему",
+  "boolTrue": "да",
+  "boolFalse": "нет",
+  "emptyValue": "-"
+}

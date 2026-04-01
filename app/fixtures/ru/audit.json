@@ -1,0 +1,19 @@
+{
+  "title": "Аудит",
+  "activePath": "/audit",
+  "header": {
+    "title": "Аудит",
+    "description": "Недавние выполнения команд, записанные в HubRelay."
+  },
+  "tableHeaders": {
+    "time": "Время",
+    "command": "Команда",
+    "principal": "Principal",
+    "transport": "Транспорт",
+    "outcome": "Результат",
+    "message": "Сообщение"
+  },
+  "errors": {
+    "default": "Не удалось загрузить записи аудита."
+  }
+}

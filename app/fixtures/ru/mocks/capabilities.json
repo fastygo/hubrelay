@@ -1,0 +1,22 @@
+{
+  "profileID": "default",
+  "displayName": "Профиль HubRelay по умолчанию",
+  "capabilities": [
+    "health",
+    "capabilities",
+    "ask",
+    "egress",
+    "audit"
+  ],
+  "httpBind": "127.0.0.1:5500",
+  "emailEnabled": false,
+  "aiEnabled": true,
+  "aiProvider": "openai",
+  "aiBaseURL": "https://api.openai.com/v1",
+  "aiModel": "gpt-4.1-mini",
+  "aiApiMode": "chat",
+  "chatHistory": true,
+  "aiHasApiKey": true,
+  "proxySession": false,
+  "proxyForce": true
+}

@@ -16,8 +16,8 @@ It is designed for authenticated or admin-style interfaces where app sections ne
 
 - `NavItem` — `Path`, `Label`, `Icon` (Latty icon name without the `latty-` prefix).
 - `SidebarProps` — `Items`, `Active` (current path for active state), `Mobile` (controls sidebar rendering mode).
-- `HeaderProps` — `Title` (shown in the top header bar).
-- `ShellProps` — title, brand, nav items, active route, optional `<head>` extras, and CSS path.
+- `HeaderProps` — `Title` and optional extra header actions.
+- `ShellProps` — title, language, brand, nav items, active route, optional `<head>` extras, optional header actions, and CSS path.
 
 ## Layout model
 
@@ -69,7 +69,9 @@ Behavior:
 
 No dedicated `open`/`close` JavaScript function is used in `layout` for this interaction.
 
-`Shell` still includes a small inline script only for theme persistence and toggling (`themeScript` in helpers). That script handles dark mode and does not control navigation state.
+Theme behavior is intentionally left to the consuming application. The layout renders the theme toggle button, but the client-side logic that reads stored theme preference, updates the icon, and toggles `.dark` should be provided as an external script by the app. Theme toggle copy can be passed through `ThemeToggle`.
+
+The header can also render an optional extra action component before the theme toggle. This is useful for app-level controls such as locale switching.
 
 ## API reference
 
@@ -78,11 +80,14 @@ No dedicated `open`/`close` JavaScript function is used in `layout` for this int
 | Field | Description |
 |-------|-------------|
 | `Title` | `<title>` value and header title. |
+| `Lang` | `<html lang>` value; defaults to `en`. |
 | `BrandName` | Sidebar title in desktop/mobile sheet. Empty value defaults to `App`. |
 | `Active` | Path string matched against `NavItem.Path` for active link styling. |
 | `NavItems` | Slice of `NavItem` items. |
 | `CSSPath` | Stylesheet `href`; default `/static/css/app.css`. |
-| `HeadExtra` | Optional `templ.Component` appended inside `<head>` (analytics, fonts, scripts, custom links). |
+| `HeadExtra` | Optional `templ.Component` appended inside `<head>` (analytics, fonts, external scripts, custom links). |
+| `HeaderExtra` | Optional `templ.Component` rendered in the header before the theme toggle. |
+| `ThemeToggle` | Optional theme toggle labels (`Label`, `SwitchToDarkLabel`, `SwitchToLightLabel`). |
 
 ### `SidebarProps`
 
@@ -93,6 +98,8 @@ No dedicated `open`/`close` JavaScript function is used in `layout` for this int
 ### `HeaderProps`
 
 - `Title`: Title text in the header area.
+- `Extra`: Optional `templ.Component` rendered before the theme toggle.
+- `ThemeToggle`: Optional theme toggle labels forwarded to the theme button data attributes.
 
 ## Accessibility and semantics
 

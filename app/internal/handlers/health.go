@@ -7,28 +7,10 @@ import (
 )
 
 func (a *App) Health(w http.ResponseWriter, r *http.Request) {
+	runtime := a.runtimeFor(r)
 	ctx, cancel := requestContext(r)
 	defer cancel()
 
-	discovery, err := a.Relay.Discover(ctx)
-	if err != nil {
-		render(w, r, http.StatusOK, views.HealthPage(views.HealthPageData{
-			Error: err.Error(),
-		}))
-		return
-	}
-
-	health, err := a.Relay.Health(ctx)
-	if err != nil {
-		render(w, r, http.StatusOK, views.HealthPage(views.HealthPageData{
-			Discovery: discovery,
-			Error:     err.Error(),
-		}))
-		return
-	}
-
-	render(w, r, http.StatusOK, views.HealthPage(views.HealthPageData{
-		Discovery: discovery,
-		Health:    health,
-	}))
+	data, err := runtime.Source.Health(ctx)
+	render(w, r, http.StatusOK, views.HealthPage(runtime.Presenter.HealthPage(data, err)))
 }

@@ -1,0 +1,11 @@
+{
+  "localeCode": "EN",
+  "localeName": "English",
+  "switchLanguage": "Switch language",
+  "toggleTheme": "Toggle theme",
+  "switchToDarkTheme": "Switch to dark theme",
+  "switchToLightTheme": "Switch to light theme",
+  "boolTrue": "yes",
+  "boolFalse": "no",
+  "emptyValue": "-"
+}

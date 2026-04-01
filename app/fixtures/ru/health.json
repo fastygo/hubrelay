@@ -1,0 +1,22 @@
+{
+  "title": "Здоровье",
+  "activePath": "/",
+  "header": {
+    "title": "Состояние HubRelay",
+    "description": "Проверка discovery и статуса адаптера для подключенного экземпляра HubRelay."
+  },
+  "kpiLabels": {
+    "service": "Сервис",
+    "profile": "Профиль",
+    "discoveryStatus": "Статус discovery",
+    "adapterStatus": "Статус адаптера"
+  },
+  "detailsTitle": "Детали адаптера",
+  "detailLabels": {
+    "adapter": "Адаптер",
+    "profile": "Профиль"
+  },
+  "errors": {
+    "default": "Не удалось загрузить данные о состоянии."
+  }
+}

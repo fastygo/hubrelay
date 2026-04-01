@@ -2,11 +2,22 @@ package partials
 
 import "github.com/fastygo/ui8kit/utils"
 
-templ StreamOutput() {
-	<div class={ utils.CardVariant("muted") }>
+templ StreamOutput(data StreamOutputData) {
+	<div
+		id="stream-panel"
+		class={ utils.CardVariant("muted") }
+		data-status-idle={ data.InitialStatus }
+		data-status-sync={ data.StatusSync }
+		data-status-prompt-required={ data.StatusPromptRequired }
+		data-status-connecting={ data.StatusConnecting }
+		data-status-streaming={ data.StatusStreaming }
+		data-status-done={ data.StatusDone }
+		data-status-error={ data.StatusError }
+		data-default-error={ data.DefaultError }
+	>
 		<div class="app-stream-head">
-			<h2 class="text-lg font-semibold">Streaming Output</h2>
-			<span id="stream-status" class="app-stream-status">idle</span>
+			<h2 class="text-lg font-semibold">{ data.Title }</h2>
+			<span id="stream-status" class="app-stream-status">{ data.InitialStatus }</span>
 		</div>
 		<pre id="stream-output" class="app-stream-output"></pre>
 		<div id="stream-result" class="app-stream-result"></div>

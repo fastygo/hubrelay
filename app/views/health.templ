@@ -6,11 +6,11 @@ import (
 )
 
 templ HealthPage(data HealthPageData) {
-	@Layout("Health", "/", nil) {
+	@Layout(data.Layout, nil) {
 		<div class="app-page">
 			<div class="app-page-header">
-				@ui.Title(ui.TitleProps{Order: 1}, "HubRelay Health")
-				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Discovery and adapter health for the connected HubRelay instance.")
+				@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
 			</div>
 
 			if data.Error != "" {
@@ -20,37 +20,25 @@ templ HealthPage(data HealthPageData) {
 			}
 
 			<div class="kit-kpi-grid-4">
-				<div class={ utils.CardVariant("kpi") }>
-					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Service")
-					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Discovery.Service)
-				</div>
-				<div class={ utils.CardVariant("kpi") }>
-					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Profile")
-					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Discovery.Profile)
-				</div>
-				<div class={ utils.CardVariant("kpi") }>
-					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Discovery Status")
-					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Discovery.Status)
-				</div>
-				<div class={ utils.CardVariant("kpi") }>
-					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Adapter Status")
-					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Health.Status)
-				</div>
+				for _, item := range data.KPIs {
+					<div class={ utils.CardVariant("kpi") }>
+						@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, item.Label)
+						@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, item.Value)
+					</div>
+				}
 			</div>
 
 			<div class={ utils.CardVariant("default") }>
-				@ui.Title(ui.TitleProps{Order: 3}, "Adapter Details")
+				@ui.Title(ui.TitleProps{Order: 3}, data.DetailsTitle)
 				<div class="kit-table-wrap">
 					<table class="kit-table">
 						<tbody class="table-body">
-							<tr>
-								<td class="kit-table-cell-label">Adapter</td>
-								<td class="kit-table-cell">{ data.Health.Adapter }</td>
-							</tr>
-							<tr>
-								<td class="kit-table-cell-label">Profile</td>
-								<td class="kit-table-cell">{ data.Health.Profile }</td>
-							</tr>
+							for _, item := range data.Details {
+								<tr>
+									<td class="kit-table-cell-label">{ item.Label }</td>
+									<td class="kit-table-cell">{ item.Value }</td>
+								</tr>
+							}
 						</tbody>
 					</table>
 				</div>

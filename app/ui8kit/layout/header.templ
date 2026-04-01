@@ -13,15 +13,22 @@ templ Header(props HeaderProps) {
 			<span class="latty latty-menu h-4 w-4"></span>
 		</label>
 		<h1 class="kit-header-title">{ props.Title }</h1>
-		<button
-			type="button"
-			id="ui8kit-theme-toggle"
-			onclick="ui8kitToggleTheme()"
-			class="kit-header-theme-btn"
-			aria-label="Toggle theme"
-			aria-pressed="false"
-		>
-			<span id="theme-toggle-icon" class="latty latty-moon h-4 w-4"></span>
-		</button>
+		<div class="kit-header-actions">
+			if props.Extra != nil {
+				@props.Extra
+			}
+			<button
+				type="button"
+				id="ui8kit-theme-toggle"
+				class="kit-header-theme-btn"
+				data-switch-to-dark-label={ themeToggleSwitchToDarkLabel(props.ThemeToggle.SwitchToDarkLabel) }
+				data-switch-to-light-label={ themeToggleSwitchToLightLabel(props.ThemeToggle.SwitchToLightLabel) }
+				title={ themeToggleLabel(props.ThemeToggle.Label) }
+				aria-label={ themeToggleLabel(props.ThemeToggle.Label) }
+				aria-pressed="false"
+			>
+				<span id="theme-toggle-icon" class="latty latty-moon h-4 w-4"></span>
+			</button>
+		</div>
 	</header>
 }

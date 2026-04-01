@@ -1,0 +1,42 @@
+{
+  "title": "Ask",
+  "activePath": "/ask",
+  "header": {
+    "title": "Ask / Streaming",
+    "description": "Run the ask command through the dashboard. JavaScript uses SSE, while the POST action provides a synchronous fallback."
+  },
+  "fields": {
+    "prompt": {
+      "label": "Prompt",
+      "placeholder": "Ask HubRelay..."
+    },
+    "model": {
+      "label": "Model override",
+      "placeholder": "optional"
+    }
+  },
+  "actions": {
+    "streamSubmit": "Start SSE stream",
+    "syncSubmit": "Run synchronously"
+  },
+  "stream": {
+    "title": "Streaming Output",
+    "initialStatus": "idle",
+    "statusSync": "sync",
+    "statusPromptRequired": "prompt required",
+    "statusConnecting": "connecting",
+    "statusStreaming": "streaming",
+    "statusDone": "done",
+    "statusError": "error",
+    "defaultError": "stream failed"
+  },
+  "result": {
+    "title": "Synchronous Result",
+    "statusLabel": "Status",
+    "messageLabel": "Message"
+  },
+  "errors": {
+    "invalidForm": "invalid form submission",
+    "promptRequired": "prompt is required"
+  }
+}

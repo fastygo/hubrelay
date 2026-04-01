@@ -1,0 +1,30 @@
+{
+  "brandName": "HubRelay",
+  "nav": [
+    {
+      "path": "/",
+      "label": "Здоровье",
+      "icon": "server"
+    },
+    {
+      "path": "/capabilities",
+      "label": "Возможности",
+      "icon": "sparkles"
+    },
+    {
+      "path": "/ask",
+      "label": "Запрос",
+      "icon": "message-circle"
+    },
+    {
+      "path": "/egress",
+      "label": "Выход",
+      "icon": "shield"
+    },
+    {
+      "path": "/audit",
+      "label": "Аудит",
+      "icon": "history"
+    }
+  ]
+}

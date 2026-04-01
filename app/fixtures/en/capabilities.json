@@ -1,0 +1,30 @@
+{
+  "title": "Capabilities",
+  "activePath": "/capabilities",
+  "header": {
+    "title": "Capabilities",
+    "description": "Immutable HubRelay profile capabilities exposed through the SDK."
+  },
+  "kpiLabels": {
+    "profileID": "Profile ID",
+    "displayName": "Display Name",
+    "aiModel": "AI Model"
+  },
+  "flagsTitle": "Flags",
+  "flagLabels": {
+    "httpBind": "HTTP bind",
+    "aiEnabled": "AI enabled",
+    "aiProvider": "AI provider",
+    "aiApiMode": "AI API mode",
+    "aiBaseURL": "AI base URL",
+    "aiHasApiKey": "AI has API key",
+    "chatHistory": "Chat history",
+    "emailEnabled": "Email enabled",
+    "proxySession": "Proxy session",
+    "proxyForce": "Proxy force"
+  },
+  "capabilityListTitle": "Capability List",
+  "errors": {
+    "default": "Unable to load capabilities."
+  }
+}

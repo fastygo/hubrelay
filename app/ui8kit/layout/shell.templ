@@ -2,13 +2,12 @@ package layout
 
 templ Shell(props ShellProps) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang={ shellLang(props.Lang) }>
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ props.Title }</title>
 			<link rel="stylesheet" href={ shellCSS(props.CSSPath) }/>
-			@rawScript(themeScript)
 			if props.HeadExtra != nil {
 				@props.HeadExtra
 			}
@@ -45,7 +44,7 @@ templ Shell(props ShellProps) {
 					</nav>
 				</aside>
 				<div class="kit-shell-main-column">
-					@Header(HeaderProps{Title: props.Title})
+					@Header(HeaderProps{Title: props.Title, Extra: props.HeaderExtra, ThemeToggle: props.ThemeToggle})
 					<main class="kit-shell-main">
 						{ children... }
 					</main>

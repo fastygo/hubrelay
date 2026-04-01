@@ -6,11 +6,11 @@ import (
 )
 
 templ CapabilitiesPage(data CapabilitiesPageData) {
-	@Layout("Capabilities", "/capabilities", nil) {
+	@Layout(data.Layout, nil) {
 		<div class="app-page">
 			<div class="app-page-header">
-				@ui.Title(ui.TitleProps{Order: 1}, "Capabilities")
-				@ui.Text(ui.TextProps{Class: "app-subtle"}, "Immutable HubRelay profile capabilities exposed through the SDK.")
+				@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
 			</div>
 
 			if data.Error != "" {
@@ -20,44 +20,34 @@ templ CapabilitiesPage(data CapabilitiesPageData) {
 			}
 
 			<div class="kit-kpi-grid-3">
-				<div class={ utils.CardVariant("kpi") }>
-					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Profile ID")
-					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Capabilities.ProfileID)
-				</div>
-				<div class={ utils.CardVariant("kpi") }>
-					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "Display Name")
-					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Capabilities.DisplayName)
-				</div>
-				<div class={ utils.CardVariant("kpi") }>
-					@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, "AI Model")
-					@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, data.Capabilities.AIModel)
-				</div>
+				for _, item := range data.KPIs {
+					<div class={ utils.CardVariant("kpi") }>
+						@ui.Text(ui.TextProps{Class: "kit-kpi-label"}, item.Label)
+						@ui.Title(ui.TitleProps{Order: 3, UtilityProps: utils.UtilityProps{Mt: "2"}}, item.Value)
+					</div>
+				}
 			</div>
 
 			<div class={ utils.CardVariant("default") }>
-				@ui.Title(ui.TitleProps{Order: 3}, "Flags")
+				@ui.Title(ui.TitleProps{Order: 3}, data.FlagsTitle)
 				<div class="kit-table-wrap">
 					<table class="kit-table">
 						<tbody class="table-body">
-							<tr><td class="kit-table-cell-label">HTTP bind</td><td class="kit-table-cell">{ data.Capabilities.HTTPBind }</td></tr>
-							<tr><td class="kit-table-cell-label">AI enabled</td><td class="kit-table-cell">{ boolLabel(data.Capabilities.AIEnabled) }</td></tr>
-							<tr><td class="kit-table-cell-label">AI provider</td><td class="kit-table-cell">{ data.Capabilities.AIProvider }</td></tr>
-							<tr><td class="kit-table-cell-label">AI API mode</td><td class="kit-table-cell">{ data.Capabilities.AIAPIMode }</td></tr>
-							<tr><td class="kit-table-cell-label">AI base URL</td><td class="kit-table-cell">{ data.Capabilities.AIBaseURL }</td></tr>
-							<tr><td class="kit-table-cell-label">AI has API key</td><td class="kit-table-cell">{ boolLabel(data.Capabilities.AIHasAPIKey) }</td></tr>
-							<tr><td class="kit-table-cell-label">Chat history</td><td class="kit-table-cell">{ boolLabel(data.Capabilities.ChatHistory) }</td></tr>
-							<tr><td class="kit-table-cell-label">Email enabled</td><td class="kit-table-cell">{ boolLabel(data.Capabilities.EmailEnabled) }</td></tr>
-							<tr><td class="kit-table-cell-label">Proxy session</td><td class="kit-table-cell">{ boolLabel(data.Capabilities.ProxySession) }</td></tr>
-							<tr><td class="kit-table-cell-label">Proxy force</td><td class="kit-table-cell">{ boolLabel(data.Capabilities.ProxyForce) }</td></tr>
+							for _, item := range data.Flags {
+								<tr>
+									<td class="kit-table-cell-label">{ item.Label }</td>
+									<td class="kit-table-cell">{ item.Value }</td>
+								</tr>
+							}
 						</tbody>
 					</table>
 				</div>
 			</div>
 
 			<div class={ utils.CardVariant("default") }>
-				@ui.Title(ui.TitleProps{Order: 3}, "Capability List")
+				@ui.Title(ui.TitleProps{Order: 3}, data.CapabilityListTitle)
 				<div class="kit-chip-list">
-					for _, capability := range data.Capabilities.Capabilities {
+					for _, capability := range data.CapabilityList {
 						<span class="kit-chip">{ capability }</span>
 					}
 				</div>

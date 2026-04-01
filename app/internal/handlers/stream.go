@@ -7,6 +7,7 @@ import (
 )
 
 func (a *App) AskStream(w http.ResponseWriter, r *http.Request) {
+	runtime := a.runtimeFor(r)
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
@@ -19,14 +20,14 @@ func (a *App) AskStream(w http.ResponseWriter, r *http.Request) {
 		writeSSEHeaders(w)
 		writeSSEEvent(w, "error", map[string]any{
 			"status":  "error",
-			"message": "prompt is required",
+			"message": runtime.Presenter.AskPromptRequiredError(),
 		})
 		flusher.Flush()
 		return
 	}
 
 	ctx := r.Context()
-	stream, err := a.Relay.AskStream(ctx, prompt, model)
+	stream, err := runtime.Source.AskStream(ctx, prompt, model)
 	if err != nil {
 		writeSSEHeaders(w)
 		writeSSEEvent(w, "error", map[string]any{

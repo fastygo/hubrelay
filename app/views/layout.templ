@@ -1,14 +1,24 @@
 package views
 
-import ui8layout "github.com/fastygo/ui8kit/layout"
+import (
+	ui8layout "github.com/fastygo/ui8kit/layout"
+	"hubrelay-dashboard/views/partials"
+)
 
-templ Layout(title string, active string, headExtra templ.Component) {
+templ Layout(data LayoutData, headExtra templ.Component) {
 	@ui8layout.Shell(ui8layout.ShellProps{
-		Title:     title,
-		BrandName: "HubRelay",
-		Active:    active,
-		NavItems:  navItems(),
-		HeadExtra: headExtra,
+		Title:       data.Title,
+		Lang:        data.Locale,
+		BrandName:   data.BrandName,
+		Active:      data.Active,
+		NavItems:    data.NavItems,
+		HeadExtra:   layoutHeadExtra(headExtra),
+		HeaderExtra: partials.LanguageToggle(data.LanguageToggle),
+		ThemeToggle: ui8layout.ThemeToggleProps{
+			Label:              data.ThemeToggle.Label,
+			SwitchToDarkLabel:  data.ThemeToggle.SwitchToDarkLabel,
+			SwitchToLightLabel: data.ThemeToggle.SwitchToLightLabel,
+		},
 	}) {
 		{ children... }
 	}

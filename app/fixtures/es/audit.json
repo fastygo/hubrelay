@@ -1,0 +1,19 @@
+{
+  "title": "Auditoria",
+  "activePath": "/audit",
+  "header": {
+    "title": "Auditoria",
+    "description": "Ejecuciones recientes de comandos registradas por HubRelay."
+  },
+  "tableHeaders": {
+    "time": "Hora",
+    "command": "Comando",
+    "principal": "Principal",
+    "transport": "Transporte",
+    "outcome": "Resultado",
+    "message": "Mensaje"
+  },
+  "errors": {
+    "default": "No se pudieron cargar las entradas de auditoria."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "title": "Salud",
+  "activePath": "/",
+  "header": {
+    "title": "Estado de HubRelay",
+    "description": "Descubrimiento y estado del adaptador para la instancia conectada de HubRelay."
+  },
+  "kpiLabels": {
+    "service": "Servicio",
+    "profile": "Perfil",
+    "discoveryStatus": "Estado de descubrimiento",
+    "adapterStatus": "Estado del adaptador"
+  },
+  "detailsTitle": "Detalles del adaptador",
+  "detailLabels": {
+    "adapter": "Adaptador",
+    "profile": "Perfil"
+  },
+  "errors": {
+    "default": "No se pudieron cargar los datos de salud."
+  }
+}

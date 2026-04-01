@@ -4,21 +4,24 @@ import (
 	"net/http"
 	"strings"
 
+	"hubrelay-dashboard/internal/presenter"
 	"hubrelay-dashboard/views"
 )
 
 func (a *App) AskPage(w http.ResponseWriter, r *http.Request) {
-	render(w, r, http.StatusOK, views.AskPage(views.AskPageData{
+	runtime := a.runtimeFor(r)
+	render(w, r, http.StatusOK, views.AskPage(runtime.Presenter.AskPage(presenter.AskPageState{
 		Prompt: strings.TrimSpace(r.URL.Query().Get("prompt")),
 		Model:  strings.TrimSpace(r.URL.Query().Get("model")),
-	}))
+	})))
 }
 
 func (a *App) AskSubmit(w http.ResponseWriter, r *http.Request) {
+	runtime := a.runtimeFor(r)
 	if err := r.ParseForm(); err != nil {
-		render(w, r, http.StatusBadRequest, views.AskPage(views.AskPageData{
-			Error: "invalid form submission",
-		}))
+		render(w, r, http.StatusBadRequest, views.AskPage(runtime.Presenter.AskPage(presenter.AskPageState{
+			Error: runtime.Presenter.AskInvalidFormError(),
+		})))
 		return
 	}
 
@@ -31,30 +34,30 @@ func (a *App) AskSubmit(w http.ResponseWriter, r *http.Request) {
 	prompt := strings.TrimSpace(r.FormValue("prompt"))
 	model := strings.TrimSpace(r.FormValue("model"))
 	if prompt == "" {
-		render(w, r, http.StatusBadRequest, views.AskPage(views.AskPageData{
+		render(w, r, http.StatusBadRequest, views.AskPage(runtime.Presenter.AskPage(presenter.AskPageState{
 			Prompt: prompt,
 			Model:  model,
-			Error:  "prompt is required",
-		}))
+			Error:  runtime.Presenter.AskPromptRequiredError(),
+		})))
 		return
 	}
 
 	ctx, cancel := requestContext(r)
 	defer cancel()
 
-	result, err := a.Relay.Ask(ctx, prompt, model)
+	result, err := runtime.Source.Ask(ctx, prompt, model)
 	if err != nil {
-		render(w, r, http.StatusOK, views.AskPage(views.AskPageData{
+		render(w, r, http.StatusOK, views.AskPage(runtime.Presenter.AskPage(presenter.AskPageState{
 			Prompt: prompt,
 			Model:  model,
 			Error:  err.Error(),
-		}))
+		})))
 		return
 	}
 
-	render(w, r, http.StatusOK, views.AskPage(views.AskPageData{
+	render(w, r, http.StatusOK, views.AskPage(runtime.Presenter.AskPage(presenter.AskPageState{
 		Prompt: prompt,
 		Model:  model,
 		Result: &result,
-	}))
+	})))
 }

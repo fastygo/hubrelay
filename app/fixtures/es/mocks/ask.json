@@ -1,0 +1,41 @@
+{
+  "result": {
+    "status": "ok",
+    "message": "comando ask completado",
+    "data": {
+      "answer": "Esta es una respuesta de fixture para el modo de vista previa.",
+      "model": "gpt-4.1-mini",
+      "source": "fixture"
+    }
+  },
+  "stream": {
+    "chunks": [
+      {
+        "delta": "Este "
+      },
+      {
+        "delta": "es "
+      },
+      {
+        "delta": "un "
+      },
+      {
+        "delta": "stream "
+      },
+      {
+        "delta": "de "
+      },
+      {
+        "delta": "fixture."
+      }
+    ],
+    "result": {
+      "status": "ok",
+      "message": "stream completado",
+      "data": {
+        "answer": "Este es un stream de fixture.",
+        "source": "fixture"
+      }
+    }
+  }
+}
