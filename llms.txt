@@ -12,6 +12,11 @@ Closed/private directories are explicitly excluded:
 - `.manual/*`
 - `.paas/*`
 
+`.paas/*` is intentionally excluded from raw navigator output, but deployment contracts are still discoverable via:
+- `docs/deploy/README.md` (public index of deployment flows)
+- `docs/README.md` (`Deployment links` section)
+- `.paas/parse_config.sh` + `.paas/deploy-hostrun-clean.sh` + `.paas/deploy-app-clean.sh` (private operational scripts)
+
 ## What this repository is
 
 HubRelay is a monorepo for a command-control runtime and an operator dashboard:
@@ -66,6 +71,7 @@ HubRelay is a monorepo for a command-control runtime and an operator dashboard:
 - `docs/streaming.md`
 - `docs/security-and-privacy/README.md`
 - `docs/sdk.md`
+- `docs/deploy/README.md`
 - `docs/operations/README.md`
 
 ### Dashboard and UI kit

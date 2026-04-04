@@ -33,11 +33,32 @@ curl -s -X POST http://127.0.0.1:5500/api/command \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"ask","args":{"prompt":"hello"}}'
 ```
 
-## 2.1) Dashboard against local bot
+## 2.1) Dashboard local development
+
+For UI/UX iteration use fixture mode first: it renders all dashboard pages from local mocks and does not require a running bot.
+
+```bash
+cd apps/dashboard
+go mod tidy
+npm install
+npm run sync:ui8kit
+npm run build:css
+templ generate ./...
+APP_DATA_SOURCE=fixture APP_AUTH_DISABLED=true APP_BIND=127.0.0.1:8080 go run ./cmd/server
+```
+
+```bash
+curl -sI http://127.0.0.1:8080/
+curl -sI http://127.0.0.1:8080/capabilities
+curl -sI http://127.0.0.1:8080/ask
+curl -sI http://127.0.0.1:8080/egress
+curl -sI http://127.0.0.1:8080/audit
+```
+
+When you need real backend integration:
 
 ```bash
 APP_DATA_SOURCE=live go run ./apps/dashboard/cmd/server
-APP_DATA_SOURCE=fixture APP_AUTH_DISABLED=true go run ./apps/dashboard/cmd/server
 ```
 
 ## Troubleshooting

@@ -1,298 +1,122 @@
-# Hub Bot Deployment Guide
+# HubRelay PAAS Deployment (Bot + Dashboard)
 
-Operator narrative (installation, providers, “why”): see **[`docs/`](../docs/README.md)**.
+Этот `.paas`-пакет сейчас поддерживает **2 основных сценария**:
 
-This `.paas` folder manages one thing only:
+- `deploy-hostrun` — деплой **бота** (runtime `/opt/hubrelay`, service `hubrelay.service`)
+- `deploy-app` — деплой **админки** (dashboard, runtime `/opt/hubrelay-dashboard`, service `hubrelay-dashboard.service`)
 
-- the internal-only hub bot runtime.
+> Важно: обе команды используют `parse_config.sh`, поэтому файл
+> `.paas/parse_config.sh` должен быть в репозитории.
 
-The deployment strategy is intentionally simple:
+---
 
-- no managed application flows,
-- no admin dashboard flows,
-- no runtime adapter installation,
-- one immutable bot image per deploy profile.
+## Текущий набор ключевых файлов `.paas`
 
-## Runtime model
+- `config.yml` (дефолтные `INPUT_*`)
+- `extensions/deploy-hostrun.yml`
+- `extensions/deploy-app.yml`
+- `deploy-hostrun-clean.sh`
+- `deploy-app-clean.sh`
+- `README.md` (этот файл)
 
-- the bot listens only on the server loopback interface,
-- the default internal URL is `http://127.0.0.1:5500`,
-- first operator tests use `curl`,
-- the first browser UX uses an SSH tunnel to the same loopback endpoint,
-- mutable state stays in the mounted `bbolt` database,
-- deploy inputs define the immutable image profile.
+У вас должен быть:
 
-## Supported flows
+- `.paas/parse_config.sh` — **обязательный** (без него `deploy-*.sh` не выполняется)
+- пары ключей SSH в `~/.ssh` + пароль/выписки доступа к серверу
 
-| Extension | Purpose |
-| --- | --- |
-| `bootstrap-direct` | First install on a clean server or a full reinstall |
-| `deploy-direct` | Update the bot by building the image on the server |
-| `deploy` | Update the bot through a registry-backed image |
+---
 
-## Required inputs
+## Сценарий 1: деплой только бота (`hubrelay.service`)
 
-### Shared runtime inputs
-
-| Input | Meaning |
-| --- | --- |
-| `INPUT_BOT_NAME` | Docker Compose project and runtime directory name |
-| `INPUT_BOT_URL` | Internal bot URL, normally `http://127.0.0.1:5500` |
-| `INPUT_BOT_PROFILE_ID` | Immutable profile baked into the built image |
-| `INPUT_BOT_DISPLAY_NAME` | Human-readable name for the immutable profile |
-| `INPUT_BOT_HTTP_BIND` | Bind address compiled into the image; `127.0.0.1:5500` for strict loopback, or `0.0.0.0:5500` when the runtime must accept in-network connections (still use firewall policy) |
-| `INPUT_BOT_EMAIL_ENABLED` | Whether the image exposes the email adapter |
-| `INPUT_BOT_EMAIL_PROVIDER` | Email provider name baked into the image |
-| `INPUT_BOT_EMAIL_MODE` | Email adapter mode baked into the image |
-| `INPUT_BOT_OPENAI_ENABLED` | Whether the image declares the OpenAI capability |
-| `INPUT_AI_PROVIDER` | AI backend provider such as `openai`, `openrouter`, or `cerebras` |
-| `INPUT_AI_API_KEY` | Deploy-time API key baked into the immutable runtime profile |
-| `INPUT_AI_BASE_URL` | Optional OpenAI-compatible base URL override |
-| `INPUT_AI_MODEL` | Default AI model for the `ask` command and browser chat |
-| `INPUT_AI_API_MODE` | OpenAI-compatible API path: `chat_completions` by default, optional `responses` |
-| `INPUT_CHAT_HISTORY` | Browser-only chat history flag: `true` uses localStorage, `false` uses tab memory only |
-| `INPUT_PROXY_SESSION_ENABLED` | Enables the in-memory proxy session UI/API for AI requests |
-| `INPUT_PROXY_SESSION_FORCE` | Requires outbound provider traffic to use an active proxy session lease; recommended default is `true` |
-| `INPUT_TAG` | Optional explicit image tag instead of `sha-<commit>` |
-
-### Registry inputs
-
-| Input | Meaning |
-| --- | --- |
-| `INPUT_REGISTRY_HOST` | Registry host for `deploy` |
-| `INPUT_IMAGE_REPOSITORY` | Registry repository for `deploy` |
-| `INPUT_REGISTRY_USERNAME` | Registry username for `deploy` |
-| `INPUT_REGISTRY_PASSWORD` | Registry password for `deploy` |
-
-## Recommended `.paas/config.yml`
-
-```yaml
-server: production
-
-defaults:
-  INPUT_BOT_NAME: hub-bot
-  INPUT_BOT_URL: http://127.0.0.1:5500
-  INPUT_BOT_PROFILE_ID: tunnel-email-openai
-  INPUT_BOT_DISPLAY_NAME: Tunnel chat + Yandex mail + OpenAI
-  INPUT_BOT_HTTP_BIND: 127.0.0.1:5500
-  INPUT_BOT_EMAIL_ENABLED: "true"
-  INPUT_BOT_EMAIL_PROVIDER: yandex
-  INPUT_BOT_EMAIL_MODE: scaffold
-  INPUT_BOT_OPENAI_ENABLED: "true"
-  INPUT_AI_PROVIDER: openai
-  INPUT_AI_BASE_URL: ""
-  INPUT_AI_MODEL: gpt-4.1-mini
-  INPUT_AI_API_MODE: chat_completions
-  INPUT_CHAT_HISTORY: "false"
-  INPUT_PROXY_SESSION_ENABLED: "true"
-  INPUT_PROXY_SESSION_FORCE: "true"
-  INPUT_REGISTRY_HOST: <REGISTRY_HOST>
-  INPUT_IMAGE_REPOSITORY: <REGISTRY_NAMESPACE>/<REPOSITORY>
-  # INPUT_TAG: ""
-
-extensions_dir: .paas/extensions
-```
-
-Keep secrets outside git:
+Используйте, если нужен **только bot API**:
 
 ```bash
-export INPUT_REGISTRY_USERNAME="<REGISTRY_USERNAME>"
-export INPUT_REGISTRY_PASSWORD="<REGISTRY_PASSWORD>"
-export INPUT_AI_API_KEY="<AI_PROVIDER_KEY>"
+export HUBRELAY_HOST='176.124.209.3'
+export HUBRELAY_USER='root'
+export HUBRELAY_SSH_KEY='C:/Users/alexe/.ssh/appserv'
+
+export INPUT_AI_API_KEY='<OPENAI_API_KEY>'
+export INPUT_AI_BASE_URL='https://api.cerebras.ai/v1'
+export INPUT_AI_MODEL='gpt-oss-120b'
+
+bash ./.paas/deploy-hostrun-clean.sh
 ```
 
-The AI provider key remains deploy-time only and is not stored in `bbolt`.
-The default AI request path is `chat/completions`, which is often the safest OpenAI-compatible option for providers like OpenRouter or Cerebras.
-The recommended default for `INPUT_PROXY_SESSION_FORCE` is `true` so new outbound-capable integrations start from the stricter policy baseline.
+Что делает скрипт:
 
-## One-time server prerequisites
+- рендерит env для расширения `deploy-hostrun`
+- билдит и деплоит только `./cmd/bot` как `/opt/hubrelay/bot`
+- пересобирает `systemd` юнит `hubrelay.service`
+- перезапускает сервис и делает health/capabilities smoke
 
-Prepare the server before running any extension:
-
-```bash
-ssh root@<SERVER_HOST>
-docker --version
-docker compose version
-mkdir -p /opt/hub-bot
-ls -ld /opt/hub-bot
-```
-
-The server must provide:
-
-- Docker Engine and `docker compose`,
-- writable runtime directory under `/opt`,
-- outbound network access if the selected profile depends on external APIs,
-- SSH access for source upload in direct flows.
-
-## Input export workflow
-
-Use `parse_config.sh` to print the exact `export INPUT_*` lines needed for one extension:
+Проверка после деплоя:
 
 ```bash
-bash ./.paas/parse_config.sh --extension bootstrap-direct
-```
-
-Apply the generated exports in the current shell and then run `paas.exe` directly:
-
-```bash
-eval "$(bash ./.paas/parse_config.sh --extension bootstrap-direct --no-comments)"
-./paas.exe run bootstrap-direct
-```
-
-This is the recommended flow on Windows / Git Bash and on Linux/macOS because it makes the resolved values explicit before execution.
-
-The export helper applies this priority:
-
-1. exported `INPUT_*` variables already present in the current shell
-2. values from `.paas/config.yml`
-3. extension defaults from `inputs:`
-4. empty string
-
-## What to review before a run
-
-Check the generated exports for:
-
-- the expected bot name,
-- the expected loopback bot URL on port `5500`,
-- the expected immutable profile ID,
-- the expected AI provider, model, and base URL,
-- whether browser chat history should survive reload through `localStorage`,
-- unexpected adapter defaults,
-- unexpected registry values for `deploy`.
-
-Validate the extensions before the first real run:
-
-```bash
-./paas.exe validate bootstrap-direct
-./paas.exe validate deploy-direct
-./paas.exe validate deploy
-```
-
-## `bootstrap-direct`
-
-Use this flow on a fresh server or when reinstalling the hub bot runtime from scratch.
-
-```bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/<KEY_FILE>
-
-./paas.exe validate bootstrap-direct
-bash ./.paas/parse_config.sh --extension bootstrap-direct
-eval "$(bash ./.paas/parse_config.sh --extension bootstrap-direct --no-comments)"
-./paas.exe run bootstrap-direct
-```
-
-What it does:
-
-1. uploads the tracked repository contents to `/tmp/build-<INPUT_BOT_NAME>` on the server,
-2. builds the bot image on the server with immutable profile build args,
-3. renders the root `docker-compose.yml` into `/opt/<INPUT_BOT_NAME>/docker-compose.yml`,
-4. starts or replaces the runtime with `docker compose up -d --remove-orphans`,
-5. waits until `GET /healthz` succeeds,
-6. runs a smoke command against `POST /api/command`.
-
-## `deploy-direct`
-
-Use this flow for routine updates without a registry hop.
-
-```bash
-./paas.exe validate deploy-direct
-bash ./.paas/parse_config.sh --extension deploy-direct
-eval "$(bash ./.paas/parse_config.sh --extension deploy-direct --no-comments)"
-./paas.exe run deploy-direct
-```
-
-What it does:
-
-1. uploads source to the server,
-2. builds a new image tag,
-3. re-renders `/opt/<INPUT_BOT_NAME>/docker-compose.yml`,
-4. runs `docker compose up -d --remove-orphans`,
-5. verifies `/healthz`,
-6. runs a smoke command through `/api/command`.
-
-## `deploy`
-
-Use this flow when you want the bot image pushed to a registry as part of the update.
-
-```bash
-export INPUT_REGISTRY_USERNAME="<REGISTRY_USERNAME>"
-export INPUT_REGISTRY_PASSWORD="<REGISTRY_PASSWORD>"
-
-./paas.exe validate deploy
-bash ./.paas/parse_config.sh --extension deploy
-eval "$(bash ./.paas/parse_config.sh --extension deploy --no-comments)"
-./paas.exe run deploy
-```
-
-What it does:
-
-1. uploads source to the server,
-2. logs in to the registry on the server,
-3. builds and tags the image,
-4. pushes both `sha-<commit>` and `main`,
-5. re-renders `/opt/<INPUT_BOT_NAME>/docker-compose.yml` with the registry image,
-6. updates the runtime,
-7. verifies `/healthz`,
-8. runs a smoke command through `/api/command`.
-
-## First real operator tests
-
-Run these on the server:
-
-```bash
+ssh -i "$HUBRELAY_SSH_KEY" "${HUBRELAY_USER}@${HUBRELAY_HOST}"
+systemctl status hubrelay.service --no-pager
 curl http://127.0.0.1:5500/healthz
-
 curl -X POST http://127.0.0.1:5500/api/command \
   -H "Content-Type: application/json" \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
-
-curl -X POST http://127.0.0.1:5500/api/command \
-  -H "Content-Type: application/json" \
-  -d '{"principal_id":"operator-local","roles":["operator"],"command":"system-info"}'
-
-docker compose -p "${INPUT_BOT_NAME}" -f "/opt/${INPUT_BOT_NAME}/docker-compose.yml" ps
-docker ps --format '{{.Names}}'
 ```
 
-## SSH tunnel UX
-
-Run this on the local workstation:
+SSH доступ к API с вашей машины:
 
 ```bash
-ssh -N -L 5500:127.0.0.1:5500 -i ~/.ssh/<KEY_FILE> root@<SERVER_HOST>
+ssh -N -L 5500:127.0.0.1:5500 -i "$HUBRELAY_SSH_KEY" "${HUBRELAY_USER}@${HUBRELAY_HOST}"
+# в браузере: http://127.0.0.1:5500
 ```
 
-Then open:
+---
 
-```text
-http://127.0.0.1:5500
-```
+## Сценарий 2: деплой админки (`hubrelay-dashboard.service`)
 
-This is the first real browser UX for the bot and should be treated as the primary operator path until richer clients are implemented.
-
-## Troubleshooting
-
-### Bot never becomes ready
-
-Check:
+Нужно, чтобы работала веб-админка. Требует, чтобы бот уже был поднят и доступен на `127.0.0.1:5500`.
 
 ```bash
-docker compose -p "${INPUT_BOT_NAME}" -f "/opt/${INPUT_BOT_NAME}/docker-compose.yml" logs --tail 120
-ss -ltnp | grep 5500
-curl http://127.0.0.1:5500/healthz
+export HUBRELAY_HOST='176.124.209.3'
+export HUBRELAY_USER='root'
+export HUBRELAY_SSH_KEY='C:/Users/alexe/.ssh/appserv'
+
+# переменные для dashboard-сценария
+export APP_HOST="$HUBRELAY_HOST"
+export APP_USER="$HUBRELAY_USER"
+export APP_SSH_KEY="$HUBRELAY_SSH_KEY"
+
+export INPUT_APP_ADMIN_PASS='<CHANGE_ME>'
+
+bash ./.paas/deploy-app-clean.sh
 ```
 
-### SSH upload works but remote bash fails
+Что делает скрипт:
 
-Print the resolved exports for the target extension:
+- рендерит env для расширения `deploy-app`
+- собирает `apps/dashboard/cmd/server` локально (`dist/hubrelay-dashboard`)
+- загружает бинарник и static-ассеты на `SERVER_HOST`
+- рендерит и перезапускает `hubrelay-dashboard.service`
+- делает smoke-проверки `/login`, `/`, статических файлов и auth-эндпоинтов
+
+Проверка после деплоя:
 
 ```bash
-bash ./.paas/parse_config.sh --extension <extension>
+ssh -i "$APP_SSH_KEY" "${APP_USER}@${APP_HOST}"
+systemctl status hubrelay-dashboard.service --no-pager
+curl -I http://127.0.0.1:8080/login
+curl -sS -u "${INPUT_APP_ADMIN_USER:-admin}:${INPUT_APP_ADMIN_PASS}" \
+  http://127.0.0.1:8080/capabilities
 ```
 
-Then apply them explicitly before invoking `paas.exe`.
+SSH-доступ в админку:
 
-### Read-only container validation
+```bash
+ssh -N -L 18080:127.0.0.1:8080 -i "$APP_SSH_KEY" "${APP_USER}@${APP_HOST}"
+# в браузере: http://127.0.0.1:18080/login
+```
 
-The compose file enables a read-only root filesystem. Runtime writes must go only to the mounted data directory. If startup fails, inspect the logs for an unexpected write target.
+---
+
+## Что важно помнить
+
+- `deploy-hostrun` и `deploy-app` — независимые процессы и разные артефакты.
+- Убеждайтесь, что пароль `INPUT_APP_ADMIN_PASS` всегда задаётся через env (не хранить в git).
+- Если у вас есть `WG`, можно оставить расширение `deploy-hostrun` с WG-настройками; если WG не нужен, оставьте `INPUT_BOT_APP_WG_ENABLED=false` (по умолчанию в скрипте).

@@ -29,6 +29,13 @@ Use mocks for:
 - UI-only iteration
 - deterministic demos
 
+The current fixture pack is sufficient for full dashboard UI iteration:
+- `health`: `mocks/health.json`
+- `capabilities`: `mocks/capabilities.json`
+- `ask`: `mocks/ask.json` (sync + streaming)
+- `egress`: `mocks/egress.json`
+- `audit`: `mocks/audit.json`
+
 ## Runtime modes
 
 - `APP_DATA_SOURCE=fixture` — local mocks only, no HubRelay call
