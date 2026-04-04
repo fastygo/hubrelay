@@ -1,55 +1,42 @@
-# Architecture (summary)
+# Architecture
 
-This section orients new readers. Authoritative diagrams and contracts also live under [`.project`](../../.project/README.md).
+Monorepo is organized as explicit module boundaries.
 
-## Layers
+## Module model
 
-| Layer | Responsibility |
-| --- | --- |
-| **Adapters** | Map transports (HTTP, unix socket, email, …) to `CommandEnvelope` |
-| **Core / command bus** | ACL, capabilities, audit, sensitive-data gates |
-| **Plugins** | Implement commands (`capabilities`, `system-info`, `ask`, …) |
-| **Egress manager / outbound policy** | Select healthy WG gateway and decide direct vs SOCKS lease for workload egress |
-| **AI provider** | OpenAI-compatible client (`chat_completions` or `responses` mode) |
-| **Storage** | BoltDB for principals, sessions, audit — not secrets |
-| **Build profile** | Immutable capability set compiled into the image |
+- `sshbot` root module: core runtime (`go run ./cmd/bot`).
+- `sdk/hubrelay`: typed client module.
+- `hubcore`: shared dashboard library (import-time only).
+- `apps/dashboard`: dashboard service (`go run ./apps/dashboard/cmd/server`).
+- `apps/dashboard/ui8kit`: reusable UI primitives.
 
-## Why adapters are fixed at deploy time
+## Library + binary contract
 
-**Why**: reduces attack surface and configuration drift. Changing channels requires a **rebuild and redeploy**, which is intentional for a hardened hub.
+- Shared modules are libraries.
+- Every executable imports them at build time.
+- Each service is one standalone binary.
 
-## Why capabilities gate plugins
-
-**Why**: every command declares `RequiredCapabilities`. The core rejects requests that the image never promised. That keeps partial or mis-built images from silently exposing features.
-
-## Data flow (mental model)
-
-```
-Client → Adapter → CommandEnvelope → Core → Plugin(s)
-                              ↓
-                         Audit (BoltDB)
+```text
+hubrelay daemon        -> cmd/bot
+dashboard service      -> apps/dashboard/cmd/server
 ```
 
-When a plugin calls an external API, it goes through **outbound policy** and the configured HTTP client (direct or SOCKS).
+## Request flow
 
-## Headless adapters (operational hardening)
+`adapter -> CommandEnvelope -> core service -> plugin -> outbound policy -> external target`
 
-The loopback server applies:
+## Core contracts
 
-- Bounded request bodies (DoS mitigation),
-- Read/write timeouts on the HTTP server,
-- Shared JSON and SSE routes across TCP and unix socket transports,
+- Principal: transport-independent actor identity.
+- CommandEnvelope: normalized command request.
+- CommandResult: typed response + status flags.
+- Plugin: capability-gated command handler.
+- Adapter: transport boundary to command envelope.
+- OutboundPolicy: shared egress control.
+- AuditEntry: immutable execution record.
 
-**Why**: even an internal-only listener can be reached by anyone who can open the forwarded port or local socket; treat defense-in-depth as normal.
+## Operational map
 
-## Build profile and local dev
-
-Compile-time `ldflags` set the production profile. For `go run ./cmd/bot`, `INPUT_*` environment variables are merged **once** at startup (`sync.Once`) so local development does not require repeating `-ldflags`.
-
-**Why**: developer ergonomics without changing production’s “single immutable image” story.
-
-## Deeper reading
-
-- [Outbound model](../../.project/outbound-model.md)
-- [Security model](../../.project/security-model.md)
-- [Core contracts](../../.project/core-contracts.md)
+- Detailed notes: [`.project/architecture.md`](../../.project/architecture.md)
+- Outbound policy contracts: [`.project/outbound-model.md`](../../.project/outbound-model.md)
+- Security model: [`.project/security-model.md`](../../.project/security-model.md)

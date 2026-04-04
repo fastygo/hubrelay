@@ -13,9 +13,16 @@ Short-form architecture notes, ADRs, and profile sketches. They stay **technolog
 | [security-model.md](security-model.md) | Capability and audit boundaries |
 | [storage-model.md](storage-model.md) | `bbolt` responsibilities |
 | [threat-model.md](threat-model.md) | Trust assumptions |
-| [roadmap.md](roadmap.md) | Phases and invariants |
+| [roadmap.md](roadmap.md) | Execution model and invariants |
 | [profiles/tunnel-email-openai.md](profiles/tunnel-email-openai.md) | Default deploy profile |
 | [adr/](adr/) | Architecture decision records |
+
+### Current monorepo structure references
+
+- `hubcore/` is the reusable dashboard library (auth, locale, shell, defaults).
+  It is imported by service binaries and is not deployed as a process.
+- `apps/dashboard/` is the first dashboard consumer binary module (`hubrelay-dashboard`).
+- `sdk/hubrelay/` is the protocol client module.
 
 ## WireGuard + HubRelay (deep dive)
 

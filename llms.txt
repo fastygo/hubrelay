@@ -1,0 +1,146 @@
+# HubRelay LLM Navigator
+
+Single-file orientation for first-time onboarding and cross-file navigation.
+
+## What this repository is
+
+HubRelay is a monorepo for a command-control runtime and a dashboard:
+
+- `sshbot` module at repository root: command daemon (`cmd/bot`) with plugins and egress control.
+- `sdk/hubrelay`: Go client SDK for command execution and streaming.
+- `hubcore`: shared dashboard library (auth/locale/shell), imported at build time.
+- `apps/dashboard`: dashboard BFF service (`apps/dashboard/cmd/server`).
+- `apps/dashboard/ui8kit`: reusable UI component toolkit.
+
+`hubcore` is a library, not a running daemon.
+
+## Start here (first read order)
+
+1) `README.md` (root)
+2) `docs/README.md` (global index)
+3) `docs/overview/README.md`
+4) `docs/getting-started/README.md`
+5) `docs/architecture/README.md`
+6) `docs/local-testing/README.md`
+7) `docs/deploy/README.md`
+
+## Open sections map
+
+### Root
+- `README.md` — one-page project commands, health checks, and links.
+- `docs/README.md` — documentation index.
+- `.project/README.md` — execution-model oriented project notes.
+- `.project/architecture.md` — module boundaries and operational contracts.
+- `.project/roadmap.md` — current direction and model constraints.
+- `.project/wg/os-enforcement.md` — OS enforcement model (host-level egress fail-closed).
+- `.project/wg/HUBRELAY_SYSTEM_GUIDE.md` — combined app/network mental model.
+- `.project/wg/README.md` — private egress workflow overview.
+- `.project/wg/egress-gateway/README.md` — Marvin gateway role.
+- `.project/core-contracts.md` — protocol contracts.
+- `.project/outbound-model.md` — shared outbound policy model.
+- `.project/security-model.md` — safety and boundary notes.
+- `.project/storage-model.md` — runtime state model and migration policy.
+- `.project/deploy-model.md` — immutable image/binary behavior.
+- `.project/threat-model.md` — concise threat view.
+- `.project/profiles/tunnel-email-openai.md` — one concrete profile.
+- `.project/adr/0001-immutable-deploy-profile.md`
+- `.project/adr/0002-secrets-outside-runtime-state.md`
+- `.project/adr/0003-bbolt-as-runtime-state.md`
+- `.roadmap/sdk-relay-hub.md` — implementation recap and execution model.
+- `.roadmap/checklist.md` — prioritized engineering plan.
+
+### Core runtime docs
+- `docs/architecture/README.md`
+- `docs/network-tunnel-and-proxy/README.md`
+- `docs/providers-and-ai/README.md`
+- `docs/egress.md`
+- `docs/streaming.md`
+- `docs/security-and-privacy/README.md`
+- `docs/sdk.md`
+- `docs/operations/README.md`
+- `docs/local-testing/README.md`
+- `docs/deploy/README.md`
+- `apps/dashboard/docs/fixtures-and-runtime.md`
+
+### Dashboard
+- `apps/dashboard/README.md`
+- `apps/dashboard/ui8kit/README.md`
+- `apps/dashboard/ui8kit/docs/README.md`
+- `apps/dashboard/ui8kit/docs/design-principles.md`
+- `apps/dashboard/ui8kit/docs/testing.md`
+- `apps/dashboard/ui8kit/docs/versioning.md`
+- `apps/dashboard/ui8kit/docs/scripts.md`
+- `apps/dashboard/ui8kit/docs/getting-started/README.md`
+- `apps/dashboard/ui8kit/docs/getting-started/installation.md`
+- `apps/dashboard/ui8kit/docs/getting-started/project-structure.md`
+- `apps/dashboard/ui8kit/docs/integration/README.md`
+- `apps/dashboard/ui8kit/docs/integration/tailwind-setup.md`
+- `apps/dashboard/ui8kit/docs/integration/sync-ui8kit-css.md`
+- `apps/dashboard/ui8kit/docs/integration/http-server.md`
+- `apps/dashboard/ui8kit/docs/packages/README.md`
+- `apps/dashboard/ui8kit/docs/packages/ui.md`
+- `apps/dashboard/ui8kit/docs/packages/layout.md`
+- `apps/dashboard/ui8kit/docs/packages/layout-shell.md`
+- `apps/dashboard/ui8kit/docs/packages/utils.md`
+- `apps/dashboard/ui8kit/docs/packages/styles.md`
+
+## Onboarding command matrix
+
+### Build and tests
+
+```bash
+go test ./...
+go test ./hubcore/...
+go test ./sdk/hubrelay/...
+go test ./apps/dashboard/...
+go test ./apps/dashboard/ui8kit/...
+```
+
+### Build binaries
+
+```bash
+go build ./cmd/bot
+go build ./apps/dashboard/cmd/server
+```
+
+### Local dashboard setup
+
+```bash
+cd apps/dashboard
+go mod tidy
+npm install
+npm run sync:ui8kit
+npm run build:css
+templ generate ./...
+```
+
+### Runtime checks
+
+```bash
+curl -s http://127.0.0.1:5500/healthz
+curl -s -X POST http://127.0.0.1:5500/api/command \
+  -H "Content-Type: application/json" \
+  -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
+```
+
+### Egress/safety checks
+
+```bash
+INPUT_AI_API_KEY=<YOUR_KEY> INPUT_AI_BASE_URL=<BASE_URL> INPUT_AI_MODEL=<MODEL> INPUT_AI_API_MODE=chat_completions INPUT_PROXY_SESSION_ENABLED=false INPUT_PRIVATE_EGRESS_REQUIRED=true INPUT_PRIVATE_EGRESS_INTERFACE=wg0 INPUT_PRIVATE_EGRESS_TEST_HOST=10.88.0.1 INPUT_PRIVATE_EGRESS_FAIL_CLOSED=true go run ./cmd/bot
+```
+
+## For LLM context prioritization
+
+- Prioritize `README.md`, `docs/README.md`, `docs/overview/README.md`, `docs/getting-started/README.md` first.
+- Resolve architecture from `.project/architecture.md` and `.roadmap/sdk-relay-hub.md` next.
+- Use `docs/*` for operational flow before reading any implementation details.
+- For command contract details, start with `.project/core-contracts.md`, `docs/sdk.md`, and `docs/streaming.md`.
+- For security boundaries, check `.project/security-model.md`, `.project/threat-model.md`, and `docs/security-and-privacy/README.md`.
+
+## Index policy
+
+Expose:
+- `index`: `/README.md`
+- `docs`: `/docs/README.md`
+- `project`: `/.project/README.md`
+- `roadmap`: `/.roadmap/checklist.md`

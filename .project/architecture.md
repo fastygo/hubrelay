@@ -1,5 +1,19 @@
 # Architecture
 
+## Repository structure and dependency rule
+
+This project uses a module-per-concern model:
+
+`hubcore` is a **library module**, not a runtime service.
+Every executable in this repository is a separate binary that imports shared libraries at build time.
+There is no deployable `hubcore` daemon.
+
+- `sshbot` runtime has no compile-time dependency on dashboard modules.
+- `apps/dashboard` imports `hubcore` and `sdk/hubrelay` for UI and transport.
+- `hubcore` and `apps/dashboard/ui8kit` stay reusable and do not depend on runtime internals.
+
+The resulting dependency direction is one-way and supports independent team ownership.
+
 ## Core Model
 Every external request is normalized into a command envelope before business logic runs.
 
@@ -36,22 +50,10 @@ flowchart TD
 6. If the plugin needs external egress, it must ask `OutboundPolicy` for a routing decision.
 7. Result is written to audit and returned through the adapter.
 
-## Async Behavior
-- adapters may run background loops,
-- command execution remains synchronous from the core point of view,
-- long jobs should emit audit checkpoints instead of holding transport state.
-
 ## Outbound Rule
 - workload outbound policy must live above individual plugins,
 - AI is only the first consumer of that layer,
 - proxy health checks remain a separate control-plane path and are not treated as normal workload outbound traffic.
-
-## HTTP adapter hardening (implementation notes)
-- request bodies are size-limited for JSON endpoints,
-- the `http.Server` uses read/write idle timeouts suitable for loopback operator use,
-- the embedded operator page escapes dynamic strings before assigning to `innerHTML` in modal and proxy views.
-
-These measures assume the listener may be reached indirectly (for example via an SSH-forwarded port on an operator workstation).
 
 ## Operator documentation
 End-to-end English guides live in [`docs/`](../docs/README.md) (installation through deploy). Short design notes remain in this folder.

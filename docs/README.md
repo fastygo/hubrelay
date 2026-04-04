@@ -1,29 +1,32 @@
 # Documentation index
 
-This folder is the **canonical English guide** for operators and contributors. It explains **why** design choices exist, not only **what** to run.
+Canonical English documentation for operators and contributors.
 
 | Section | Purpose |
 | --- | --- |
-| [Overview](overview/README.md) | Problem space, goals, non-goals |
-| [Getting started](getting-started/README.md) | Go toolchain, clone, build, first run |
-| [Architecture](architecture/README.md) | How the bot is structured; link to `.project` |
-| [Local testing](local-testing/README.md) | Provider smoke CLI, local bot, verification curls |
-| [Providers and AI](providers-and-ai/README.md) | OpenAI-compatible endpoints, models, base URL pitfalls |
-| [Network, tunnel, and proxy](network-tunnel-and-proxy/README.md) | SSH loopback access, SOCKS sessions, outbound policy |
-| [SDK](sdk.md) | Go client package for HTTP and unix socket access |
-| [Egress](egress.md) | Multi-egress configuration, health model, and failover behavior |
-| [Security and privacy](security-and-privacy/README.md) | Secrets boundary, sensitive-data handling, safe docs practice |
-| [Deploy](deploy/README.md) | PaaS extensions, inputs, read-only containers |
-| [Operations](operations/README.md) | Health checks, logs, common failures |
+| [Overview](overview/README.md) | Core invariants and module layout |
+| [Getting started](getting-started/README.md) | Toolchain, first run, smoke and local checks |
+| [Architecture](architecture/README.md) | Boundaries, modules, and runtime flow |
+| [Local testing](local-testing/README.md) | Smoke, bot checks, and dashboard checks |
+| [Providers and AI](providers-and-ai/README.md) | Provider config and model/path behavior |
+| [Network, tunnel, and proxy](network-tunnel-and-proxy/README.md) | SSH access and SOCKS session model |
+| [SDK](sdk.md) | Go client usage |
+| [Egress](egress.md) | Multi-egress config, health, and failover |
+| [Streaming](streaming.md) | SSE command output contract |
+| [Security and privacy](security-and-privacy/README.md) | Secrets and logging boundaries |
+| [Deploy](deploy/README.md) | Build units and deployment checks |
+| [Operations](operations/README.md) | Smoke checks, logs, escalation |
 
-**Project design notebooks** (shorter ADRs and contracts) live under [`.project`](../.project/README.md).
+## Monorepo map
 
-**Deploy automation** details stay next to the tooling in [`.paas/README.md`](../.paas/README.md). This repo also keeps a sanitised deploy checklist at [`.paas/.check-deploy.md`](../.paas/.check-deploy.md) and local smoke steps at [`.paas/.check-smoke.md`](../.paas/.check-smoke.md).
+- Core runtime: `cmd/bot` in `sshbot`
+- Client SDK: `sdk/hubrelay`
+- Shared dashboard library: `hubcore` (import-time only)
+- Dashboard service: `apps/dashboard`
+- UI kit: `apps/dashboard/ui8kit`
 
----
+## Deployment links
 
-## No sensitive data in documentation
-
-- Do not commit real API keys, hostnames you consider private, or personal SSH paths.
-- Use placeholders such as `<SERVER_HOST>`, `<SSH_PRIVATE_KEY>`, `<YOUR_AI_API_KEY>`.
-- Treat `capabilities` output as the source of truth for whether a key is present (`ai_has_api_key`), never paste secrets into tickets.
+- [`.paas/README.md`](../.paas/README.md)
+- [`.paas/.check-deploy.md`](../.paas/.check-deploy.md)
+- [`.paas/.check-smoke.md`](../.paas/.check-smoke.md)

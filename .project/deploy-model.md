@@ -1,25 +1,24 @@
 # Deploy Model
 
+Deploy target is an immutable image/binary with externalized runtime state.
+
 ## Bootstrap
-- local deploy inputs define the target profile,
-- deploy pipeline produces or selects the immutable image,
-- first startup creates the `bbolt` file and initializes schema,
-- no runtime config file is required on the host.
+
+1. define target profile
+2. build/push image or binary
+3. first startup creates `bbolt` and initializes schema
+4. no runtime config file inside image
 
 ## Redeploy
-- a new image may replace the old one,
-- the mounted `bbolt` file is retained,
-- adapters and secrets change only if the new image profile changes,
-- runtime state is migrated explicitly when schema version changes.
 
-## Read-Only Runtime
-- container root filesystem is read-only,
-- writable state is limited to mounted runtime storage,
-- loopback HTTP listeners are preferred for tunnel-based access,
-- adapter-specific network behavior must be declared by the profile.
+- new image may replace old
+- mounted storage persists
+- profile changes happen via image/build args only
+- state migrations are explicit
 
-## Failure Expectations
-- deleting the container must not delete runtime state,
-- changing ports must not mutate runtime data,
-- losing an adapter endpoint must not corrupt `bbolt`,
-- database recovery is handled through host-level backup and restore.
+## Runtime expectations
+
+- read-only root FS
+- writable mount for state (`BOT_DB_FILE`)
+- loopback listener preferred
+- profile defines transport/adapter behavior

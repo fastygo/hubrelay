@@ -1,31 +1,35 @@
 # Profile: tunnel-email-openai
 
 ## Intent
-Provide an operator-facing control plane that works through:
-- loopback HTTP chat intended for SSH tunneling,
-- Yandex mail command ingress and response,
-- an embedded OpenAI-backed AI layer,
-- safe system inspection plugins.
 
-## Built-In Capabilities
+Loopback operator control plane with:
+
+- HTTP chat
+- email ingress
+- OpenAI-compatible AI
+- safe system inspection plugins
+
+## Capabilities
+
 - `adapter.http_chat`
 - `adapter.email`
 - `plugin.system.info`
 - `plugin.system.capabilities`
 - `plugin.system.audit`
-- `ai.chat` (gated on a non-empty deploy-time AI key) and `ai.openai` (provider label)
-- `proxy.session` (optional SOCKS session UI/API; compile-time toggles)
+- `ai.chat` / `ai.openai`
+- optional `proxy.session`
 
-## Exclusions
-- no runtime adapter installation,
-- no Telegram or VK adapter in this profile,
-- no unrestricted shell plugin,
-- no destructive Docker control by default.
+## Runtime constraints
 
-## Runtime Expectations
-- bind HTTP chat to loopback only,
-- mount `bbolt` data from the host,
-- run with read-only root filesystem,
-- preserve runtime state across redeploy,
-- default AI traffic to OpenAI-compatible `chat/completions`,
-- default workload outbound policy to strict proxy enforcement for this profile.
+- no runtime plugin/adapter install
+- no Telegram/VK
+- no unrestricted shell
+- no destructive Docker control
+
+## Deployment expectations
+
+- bind loopback
+- mount persistent `bbolt`
+- run with read-only root FS
+- preserve state across redeploy
+- default chat/completions and strict proxy for this profile

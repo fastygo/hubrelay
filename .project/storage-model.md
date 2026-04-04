@@ -1,24 +1,25 @@
 # Storage Model
 
-## Scope
 `bbolt` stores mutable runtime state only.
 
-## Included Buckets
-- `meta`: schema version only.
-- `principals`: normalized identity and policy state.
-- `sessions`: per-principal transport session snapshots.
-- `audit`: immutable command history.
-- `plugin_state`: plugin-owned mutable state.
+## Buckets
 
-## Explicit Exclusions
-- secrets,
-- deploy-time token material,
-- adapter inventory,
-- build profile metadata,
-- generated image identity.
+- `meta`
+- `principals`
+- `sessions`
+- `audit`
+- `plugin_state`
 
-## Migration Rules
-- schema version is monotonic,
-- redeploy must preserve existing buckets,
-- migrations run before command handling starts,
-- incompatible schema changes require explicit code migration, never silent reset.
+## Excluded from `bbolt`
+
+- secrets
+- adapter inventory
+- build profile metadata
+- image identity
+
+## Migration rules
+
+- monotonic schema versions
+- preserve existing buckets on restart
+- migrate before command handling
+- destructive changes require explicit migration

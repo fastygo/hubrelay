@@ -1,263 +1,103 @@
-# OS-Level Egress Enforcement Runbook
+# OS egress enforcement for HubRelay
 
-## Purpose
-
-This runbook defines the host-level controls that make HubRelay fail closed when no approved WireGuard egress path is healthy.
-
-The application-level egress manager decides which gateway is active.
-The operating system enforces that the `hubrelay` service user cannot silently fall back to the public WAN.
+Host-level enforcement prevents fallback outside approved WG path.
+The app selects active gateway; the OS enforces what is allowed.
 
 ## Scope
 
-This document applies to the HubRelay host only.
+- service identity (`hubrelay` user)
+- policy routing by UID
+- nftables output guardrail
+- WireGuard endpoint exception
+- DNS restrictions
+- validation and failure triage
 
-It covers:
-- service-account isolation,
-- policy routing by UID,
-- `nftables` kill-switch rules,
-- DNS restrictions,
-- blackhole fallback behavior,
-- safe validation commands.
-
-## Security Intent
-
-The required security posture is:
-- HubRelay listens only on loopback or unix socket.
-- HubRelay outbound traffic is tagged by service user identity, not by process goodwill.
-- Approved egress is limited to:
-  - `lo`,
-  - `wg-*` interfaces,
-  - UDP packets needed to establish WireGuard tunnels to known peer endpoints.
-- When no healthy gateway exists, outbound traffic must fail closed.
-
-## Service User
-
-Create a dedicated local account for the HubRelay process:
+## Service user and systemd hardening
 
 ```bash
 useradd --system --home /nonexistent --shell /usr/sbin/nologin hubrelay
-id hubrelay
 ```
 
-Expected result:
-- HubRelay runs as its own UID.
-- Policy routing can target that UID only.
-- Other processes on the host are not forced through the same routing table.
-
-## systemd Unit Expectations
-
-The service should run as the dedicated user:
+Run service as dedicated user:
 
 ```ini
 [Service]
 User=hubrelay
 Group=hubrelay
-WorkingDirectory=/opt/hubrelay
-ExecStart=/usr/local/bin/hubrelay
-NoNewPrivileges=true
-PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/var/lib/hubrelay /run/hubrelay
+NoNewPrivileges=true
 RuntimeDirectory=hubrelay
-RuntimeDirectoryMode=0750
+ReadWritePaths=/var/lib/hubrelay /run/hubrelay
 ```
 
-Important notes:
-- `RuntimeDirectory` is useful for the unix socket path.
-- `ReadWritePaths` should be narrowed to the minimum required runtime directories.
-- Do not run HubRelay as `root`.
+## Policy routing
 
-## Policy Routing
-
-Reserve a dedicated routing table for HubRelay traffic.
-
-Example:
+Default table for service traffic must be safe by default.
 
 ```bash
 echo "88 hubrelay" >> /etc/iproute2/rt_tables
-ip rule add uidrange 1001-1001 lookup 88
+ip rule add uidrange <hubrelay_uid>-<hubrelay_uid> lookup 88
 ip route add blackhole default table 88
 ```
 
-Replace `1001` with the actual UID returned by `id -u hubrelay`.
-
-Design intent:
-- all traffic from the `hubrelay` user resolves in table `88`,
-- the default route in that table is `blackhole`,
-- only explicit routes added for healthy `wg-*` interfaces can carry outbound traffic.
-
-## Per-Gateway Routes
-
-When a gateway is healthy, add explicit routes for the provider or approved destination prefixes into table `88`.
-
-Example for `wg-b1`:
+When a gateway is healthy, add explicit WG routes; otherwise keep blackhole.
 
 ```bash
-ip route replace 0.0.0.0/0 dev wg-b1 table 88
-```
-
-For stricter setups, prefer destination allowlists instead of a full default route:
-
-```bash
-ip route replace 203.0.113.0/24 dev wg-b1 table 88
-ip route replace 198.51.100.0/24 dev wg-b1 table 88
-```
-
-If no gateway is healthy:
-
-```bash
+ip route replace 0.0.0.0/0 dev <wg-iface> table 88
+# fail-safe
 ip route replace blackhole default table 88
 ```
 
-## WireGuard Endpoint Exception
+## WireGuard endpoint exception
 
-Do not send WireGuard encapsulation traffic itself into table `88`.
+WG encapsulation to peer endpoint must stay in main table.
 
-The host must keep a route in the main table for the public peer endpoints, otherwise the tunnel can loop or stall.
+```bash
+ip rule add to <peer-ip> lookup main priority <higher>
+ip route get 51820 uid $(id -u hubrelay)
+```
 
-Typical requirement:
-- UDP to each WireGuard peer public IP and port stays reachable through the normal host uplink,
-- only the post-decryption HubRelay application traffic is forced through `wg-*`.
+## nftables output policy
 
-## nftables Kill Switch
-
-Create a dedicated output filter for the `hubrelay` UID.
-
-Example policy:
+Allow only loopback, approved `wg-*`, and WireGuard maintenance packets.
 
 ```nft
 table inet hubrelay_egress {
-  set wg_peer_ipv4 {
-    type ipv4_addr
-    elements = { 198.51.100.10, 198.51.100.11 }
-  }
-
   chain output {
     type filter hook output priority 0;
     policy accept;
-
-    meta skuid != 1001 return
-
+    meta skuid != <hubrelay_uid> return
     oifname "lo" accept
     oifname "wg-*" accept
-
-    ip daddr @wg_peer_ipv4 udp dport 51820 accept
-
+    ip daddr <wg_peer_ips> udp dport 51820 accept
     udp dport 53 drop
     tcp dport 53 drop
-
     reject with icmpx type admin-prohibited
   }
 }
 ```
 
-Key properties:
-- loopback remains available,
-- traffic already routed to `wg-*` is allowed,
-- UDP tunnel maintenance to WireGuard peer endpoints is allowed,
-- direct DNS leaks are blocked,
-- all other outbound traffic from the HubRelay UID is rejected.
+## DNS policy
 
-## DNS Policy
+Block direct DNS for `hubrelay` service unless explicitly through approved resolver path.
 
-Do not allow arbitrary DNS resolution from the `hubrelay` user.
-
-Recommended options:
-1. Use a resolver reachable only through the approved path.
-2. Pin `/etc/resolv.conf` or `systemd-resolved` to controlled resolvers.
-3. Block port `53` outside explicit allowed resolvers in `nftables`.
-
-If DNS must stay local:
-- allow only the local stub resolver,
-- make sure the stub itself forwards through approved resolvers,
-- verify that no fallback public DNS is configured.
-
-## Blackhole Mode
-
-Blackhole mode is the required safe state when:
-- no WireGuard gateway is healthy,
-- health checks are stale,
-- the route controller cannot determine the active gateway.
-
-Operational behavior:
-- table `88` keeps `blackhole default`,
-- `nftables` still blocks direct WAN escape,
-- HubRelay requests fail quickly instead of leaking over the public interface.
-
-## Validation Commands
-
-### Service identity
+## Validation
 
 ```bash
 id hubrelay
-systemctl status hubrelay.service --no-pager
-systemctl cat hubrelay.service
-```
-
-### Routing
-
-```bash
 ip rule show
 ip route show table 88
 ip route get 1.1.1.1 uid $(id -u hubrelay)
-ip route get <provider_ip> uid $(id -u hubrelay)
-```
-
-### Firewall
-
-```bash
-nft list ruleset
 nft list table inet hubrelay_egress
-```
-
-### WireGuard
-
-```bash
-wg show
-ip -br a show type wireguard
-```
-
-### Runtime probes
-
-```bash
 curl -s http://127.0.0.1:5500/healthz
-curl -s http://127.0.0.1:5500/api/command \
-  -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"principal_id":"operator-local","roles":["operator"],"command":"egress-status"}'
+curl -s http://127.0.0.1:5500/api/command -X POST -H "Content-Type: application/json" -d '{"principal_id":"operator-local","roles":["operator"],"command":"egress-status"}'
 ```
 
-## Failure Patterns
+## Failure checks
 
-### HubRelay can reach the internet when WireGuard is down
+- If traffic leaks to WAN: validate `ip rule`, table route, and nftables UID block.
+- If provider calls fail with WireGuard healthy: check destination routes and gateway prefixes.
+- If DNS leaks: verify resolver flow and port-53 blocks.
 
-This means the kill switch is incomplete.
+Host policy should fail-closed before app-level fallback.
 
-Check:
-- `ip rule` for the HubRelay UID,
-- default route in table `88`,
-- `nftables` output hook for `meta skuid`,
-- whether HubRelay is really running as the `hubrelay` user.
-
-### WireGuard is up but provider calls still fail
-
-Check:
-- active route in table `88`,
-- allowed provider prefixes or default route for the active `wg-*`,
-- DNS resolution path,
-- NAT and forwarding on the egress gateway.
-
-### DNS works over WAN despite policy
-
-Check:
-- stub resolver behavior,
-- TCP/UDP port `53` rules,
-- any resolver exceptions added for the HubRelay UID.
-
-## Operational Rule
-
-The application decides *which* gateway should be used.
-The OS decides *what is impossible*.
-
-If there is any disagreement between them, prefer a host configuration that drops traffic rather than one that permits fallback.

@@ -1,69 +1,59 @@
 # Core Contracts
 
-See also the English operator guide [`docs/`](../docs/README.md) for how these contracts show up in HTTP and deploy flows.
+Primary execution contracts exposed by the runtime.
 
 ## Principal
-Normalized actor identity independent from transport.
 
-Fields:
-- `id`
-- `display`
-- `transport`
-- `roles`
-- `metadata`
+Normalized actor identity:
+
+- `id`, `display`, `transport`, `roles`, `metadata`
 
 ## CommandEnvelope
-Transport-neutral execution request.
 
-Fields:
-- `id`
-- `transport`
-- `name`
-- `args`
-- `raw_text`
-- `principal`
-- `requested_at`
+Transport-neutral request:
+
+- `id`, `transport`, `name`, `args`, `raw_text`, `principal`, `requested_at`
 
 ## CommandResult
-Normalized plugin response.
 
-Fields:
-- `status`
-- `message`
-- `data`
-- `requires_confirm`
+Normalized response:
+
+- `status`, `message`, `data`, `requires_confirm`
 
 ## Plugin
-A capability-gated handler for one command name.
 
-Required behaviors:
-- declare command name,
-- declare required capabilities,
-- execute with typed context,
-- never assume direct transport details.
+One command + one capability gate per plugin.
+
+Required:
+- `Name`
+- `RequiredCapabilities`
+- `Execute(ctx)`
+- transport-agnostic behavior
 
 ## OutboundPolicy
-A shared workload egress decision layer.
 
-Required behaviors:
-- accept transport-neutral outbound intent,
-- enforce immutable profile restrictions,
-- resolve whether traffic is `direct`, `proxy`, or `blocked`,
-- avoid binding future integrations to AI-specific rules.
+Shared decision layer for all outbound work:
+
+- route by immutable policy
+- return `direct | proxy | blocked`
+- never hard-bind to AI plugin logic
 
 ## LeaseResolver
-A narrow contract that resolves workload egress routing state for a given session identifier.
 
-Required behaviors:
-- resolve the active lease for a session,
-- return an explicit error when no lease is available,
-- stay independent from plugin or adapter business logic.
+Resolve proxy lease/session for workload ID.
+
+- return active lease or clear error
+- no plugin/adapter coupling
 
 ## Adapter
-A transport boundary that:
-- authenticates or maps a principal,
-- converts external messages into `CommandEnvelope`,
-- returns `CommandResult` to the source channel.
+
+Transport boundary that:
+
+- maps incoming message to `CommandEnvelope`
+- validates principal
+- returns `CommandResult`
 
 ## AuditEntry
-Immutable execution record written for successful, rejected, and failed commands.
+
+Immutable record for every command outcome:
+- success / reject / failure

@@ -1,38 +1,28 @@
 # Security Model
 
-Operator-facing privacy and secret-boundary narrative: [`docs/security-and-privacy`](../docs/security-and-privacy/README.md).
+Operational security expectations for HubRelay and docs-only docs.
 
-## Default Policy
-- immutable capabilities define the maximum runtime surface,
-- no raw shell execution in the default profile,
-- every external action is audited,
-- adapters must map requests to normalized principals before dispatch,
-- workload outbound traffic must pass through a shared outbound policy layer.
+## Default policy
 
-## Command Classes
-### Read-only inspection
-- system info,
-- capabilities,
-- audit visibility.
+- immutable capabilities drive exposed profile
+- no raw shell in default profile
+- principals are normalized before command dispatch
+- every external action is audited
+- outbound follows shared policy layer
 
-### Controlled operations
-- future state-changing actions with typed inputs,
-- optional confirmation before execution.
+## Command classes
 
-### High-risk actions
-- destructive host changes,
-- service restarts,
-- Docker mutations.
+- Read-only: `system.info`, `capabilities`, `audit`
+- Controlled: typed state changes with confirmation where needed
+- High-risk: destructive ops; only in explicit profiles
 
-These are excluded from the first profile unless a later deploy profile explicitly includes them.
+## AI boundary
 
-## AI Boundary
-- the AI layer may select approved commands only,
-- AI output must be translated into typed plugin calls,
-- free-form shell text is not an execution interface.
+AI output must map to typed plugin calls.
+No free-form shell execution.
 
-## Outbound Boundary
-- outbound policy is a workload concern, not an AI-only concern,
-- future integrations with APIs, GraphQL endpoints, webhooks, and platforms must not open ad hoc clients without policy resolution,
-- strict proxy or future VPN routing should be enforced by the shared outbound layer,
-- proxy pool checks are exempt because they are part of routing control-plane logic rather than workload egress.
+## Outbound boundary
+
+- shared policy before provider/API/webhook calls
+- optional SOCKS path is profile-controlled
+- proxy health checks remain control-plane concern

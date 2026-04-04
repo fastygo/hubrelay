@@ -1,6 +1,6 @@
 # UI8Kit scripts
 
-This document describes the scripts that live in `app/ui8kit/scripts` and how they are used.
+This document describes the scripts that live in `apps/dashboard/ui8kit/scripts` in this monorepo.
 
 ## `gen-ui8kit-css.go`
 

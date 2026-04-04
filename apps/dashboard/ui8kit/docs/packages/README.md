@@ -1,26 +1,17 @@
-# Packages overview
+# UI8Kit packages
 
-UI8Kit is split into four importable packages.
+- `ui` (`github.com/fastygo/ui8kit/ui`): primitives and form controls.
+- `layout` (`github.com/fastygo/ui8kit/layout`): shell, header, sidebar.
+- `utils` (`github.com/fastygo/ui8kit/utils`): class helpers and variants.
+- `styles` (`github.com/fastygo/ui8kit/styles`): embedded CSS layers.
 
-| Package | Import path | Role |
-|---------|-------------|------|
-| `ui` | `github.com/fastygo/ui8kit/ui` | Low-level building blocks and form controls |
-| `layout` | `github.com/fastygo/ui8kit/layout` | Full-page shell with sidebar, header, and main |
-| `utils` | `github.com/fastygo/ui8kit/utils` | Class utilities and design-token helpers |
-| `styles` | `github.com/fastygo/ui8kit/styles` | Embedded CSS (`embed.FS`) for theme and icons |
+All components are imported from `ui`/`layout`; `styles` is optional but commonly served for theme and icons.
 
-The repository root package `github.com/fastygo/ui8kit` exposes only metadata; components live in subpackages.
+```text
+github.com/fastygo/ui8kit/ui -> depends on utils
+github.com/fastygo/ui8kit/layout -> depends on utils
+github.com/fastygo/ui8kit/styles -> standalone assets
+github.com/fastygo/ui8kit (root) -> version constant only
+```
 
-## Detailed references
-
-- [ui](ui.md)
-- [layout](layout.md)
-- [Shell component](layout-shell.md)
-- [utils](utils.md)
-- [styles](styles.md)
-
-## Dependency graph
-
-- `ui` and `layout` depend on `utils` and `github.com/a-h/templ`.
-- `styles` has no templ dependency; it is plain Go + embedded CSS files.
-- Your app imports `ui` / `layout` and typically serves a compiled CSS bundle from Tailwind input that imports `styles/*.css`.
+Docs: [ui](ui.md), [layout](layout.md), [layout shell](layout-shell.md), [utils](utils.md), [styles](styles.md).

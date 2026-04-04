@@ -2,16 +2,19 @@
 
 ## Install Go
 
-**Why Go**: single static binary, strong standard library, straightforward cross-compilation for Linux servers.
-
-1. Install a **recent stable Go** matching `go.mod` (see `go` version directive in the repo root).
-2. Verify:
-
 ```bash
 go version
 ```
 
-Official install: [https://go.dev/dl/](https://go.dev/dl/)
+Install from: https://go.dev/dl/
+
+## Repository layout
+
+- `sshbot` root: daemon (`cmd/bot`)
+- `sdk/hubrelay`: Go client
+- `hubcore`: shared dashboard library
+- `apps/dashboard`: dashboard service
+- `apps/dashboard/ui8kit`: UI toolkit
 
 ## Clone and build
 
@@ -19,23 +22,29 @@ Official install: [https://go.dev/dl/](https://go.dev/dl/)
 git clone <YOUR_GIT_REMOTE_URL>
 cd sshbot
 go build -o bot ./cmd/bot
-```
-
-Run tests:
-
-```bash
-go test ./...
+go build -o dashboard ./apps/dashboard/cmd/server
 ```
 
 ## Runtime dependencies
 
-- **BoltDB file**: created automatically under `data/bot.db` unless you set `BOT_DB_FILE`.
-- **Network**: required for `ask` and proxy health checks toward your AI provider.
-- **Docker** (optional): for parity with production, use `docker compose` as described in [Deploy](../deploy/README.md).
+- `data/bot.db` (or `BOT_DB_FILE`)
+- network access for `ask` and provider checks
+- optional `docker compose` parity: [Deploy](../deploy/README.md)
 
-## First run (local)
+## Before first run
 
-The bot reads **deploy-time** settings from the compiled profile. For local development, the same `INPUT_*` names used at deploy time are applied once at startup (see `internal/buildprofile`).
+```bash
+cd apps/dashboard
+go mod tidy
+go mod download
+npm install
+npm run sync:ui8kit
+npm run build:css
+templ generate ./...
+go test ./...
+```
+
+## First run
 
 ```bash
 export INPUT_AI_API_KEY="<YOUR_AI_API_KEY>"
@@ -48,11 +57,12 @@ export INPUT_PROXY_SESSION_ENABLED="false"
 go run ./cmd/bot
 ```
 
-Then verify the headless API with `curl` or the Go SDK.
+```bash
+cd apps/dashboard
+go run ./cmd/server
+```
 
-**Why disable proxy flags locally**: unless you are testing SOCKS, disabling proxy session avoids needing a lease for every `ask`.
-
-## Verify wiring
+## Verify
 
 ```bash
 curl -s http://127.0.0.1:5500/healthz
@@ -61,10 +71,8 @@ curl -s -X POST http://127.0.0.1:5500/api/command \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
 ```
 
-Confirm `ai_has_api_key` is `true` before relying on provider-backed commands.
+## Next
 
-## Next steps
-
-- [Local testing](../local-testing/README.md) — smaller `provider-smoke` tool.
-- [Providers and AI](../providers-and-ai/README.md) — base URLs and provider quirks.
-- [SDK](../sdk.md) — consume HubRelay from Go over HTTP or unix socket.
+- [Local testing](../local-testing/README.md)
+- [Providers and AI](../providers-and-ai/README.md)
+- [SDK](../sdk.md)

@@ -1,12 +1,8 @@
 # Local testing
 
-Why test in layers: isolate **provider credentials** from **transport wiring**, then validate the **full hub**.
+Use a three-layer flow: smoke API, full bot, and dashboard overlay checks.
 
-## 1. Provider smoke (`cmd/provider-smoke`)
-
-Minimal binary that calls the same `internal/ai` stack as the bot **without** BoltDB, adapters, or proxy session API flows.
-
-**Why**: fastest feedback when a key, model, or base URL is wrong. Errors print to stderr with full provider messages.
+## 1) Provider smoke (`cmd/provider-smoke`)
 
 ```bash
 export SMOKE_AI_API_KEY="<YOUR_AI_API_KEY>"
@@ -14,36 +10,80 @@ export SMOKE_AI_BASE_URL="https://api.example.com/v1"
 export SMOKE_AI_MODEL="<YOUR_MODEL_ID>"
 export SMOKE_AI_API_MODE="chat_completions"
 export SMOKE_PROMPT="Reply with one short sentence."
+export SMOKE_SYSTEM="false" # optional
 
 go run ./cmd/provider-smoke
 ```
 
 Optional: `SMOKE_SYSTEM`, `SMOKE_USER_ID`, `SMOKE_TIMEOUT_SEC`.
 
-See also [`.paas/.check-smoke.md`](../../.paas/.check-smoke.md) for a copy-paste checklist.
+Copy-paste checklist: [`.paas/.check-smoke.md`](../../.paas/.check-smoke.md).
 
-## 2. Full bot locally (`cmd/bot`)
+## 2) Full bot locally (`cmd/bot`)
 
-**Why**: exercises plugins, `/api/command`, sensitive-data policy, and (if enabled) proxy endpoints.
+Use `INPUT_*` variables as in [Getting started](../getting-started/README.md), then run:
 
-Use `INPUT_*` variables as in [Getting started](../getting-started/README.md). Then run the same `capabilities` and `ask` curls as in deploy verification.
+```bash
+curl -s http://127.0.0.1:5500/healthz
+curl -s -X POST http://127.0.0.1:5500/api/command \
+  -H "Content-Type: application/json" \
+  -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
+curl -s -X POST http://127.0.0.1:5500/api/command \
+  -H "Content-Type: application/json" \
+  -d '{"principal_id":"operator-local","roles":["operator"],"command":"ask","args":{"prompt":"hello"}}'
+```
 
-## 3. Optional checks
+## 2.1) Dashboard against local bot
 
-| Check | Command |
-| --- | --- |
-| Health | `curl -s http://127.0.0.1:5500/healthz` |
-| Capabilities | `POST /api/command` with `"command":"capabilities"` |
-| Ask | `POST /api/command` with `"command":"ask"` and `args.prompt` |
+```bash
+APP_DATA_SOURCE=live go run ./apps/dashboard/cmd/server
+APP_DATA_SOURCE=fixture APP_AUTH_DISABLED=true go run ./apps/dashboard/cmd/server
+```
 
-## 4. Proxy session API (when enabled)
+## Troubleshooting
 
-If `INPUT_PROXY_SESSION_ENABLED=true`, you can create a session for lab testing. Use non-production addresses in your own environment only; do not commit real proxy lists.
+1. Start bot and dashboard in separate terminals so one failing service does not mask the other.
+2. If the dashboard page is empty but returns HTTP 200:
+
+```bash
+rm -rf apps/dashboard/static/build
+cd apps/dashboard
+npm run build:css
+templ generate ./...
+go run ./cmd/server
+```
+
+On Windows:
+
+```bash
+Remove-Item -Recurse -Force apps/dashboard/static/build
+```
+
+3. If API calls to `POST /api/command` fail with connection refused:
+
+```bash
+ss -ltnp | grep 5500
+lsof -i :5500
+```
+
+On Windows where `ss`/`lsof` are missing:
+
+```bash
+netstat -ano | findstr 5500
+```
+
+4. If provider smoke succeeds but bot ask fails, validate profile alignment:
+
+```bash
+echo "INPUT_AI_MODEL=$INPUT_AI_MODEL"
+echo "INPUT_AI_BASE_URL=$INPUT_AI_BASE_URL"
+echo "INPUT_AI_API_MODE=$INPUT_AI_API_MODE"
+```
+
+## 4) Proxy session API (optional)
 
 ```bash
 curl -s -X POST http://127.0.0.1:5500/api/proxy/session \
   -H "Content-Type: application/json" \
   -d '{"principal_id":"operator-local","proxies":"<HOST>:<PORT>"}'
 ```
-
-**Why**: the API contract is part of the product; real infrastructure values belong in private runbooks, not in the repo.
