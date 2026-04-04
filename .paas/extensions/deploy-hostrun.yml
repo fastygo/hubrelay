@@ -115,6 +115,10 @@ inputs:
     label: nftables rules file for dashboard API policy
     type: text
     default: /etc/nftables.d/hubrelay-api.nft
+  - name: bot_env_file
+    label: Service environment file path
+    type: text
+    default: /opt/hubrelay/env
   - name: tag
     label: Override tag (leave empty for git SHA)
     type: text
@@ -134,6 +138,17 @@ steps:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     run: |
       set -eu
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" != "true" ]; then
+        case "${INPUT_PRIVATE_EGRESS_INTERFACE}" in
+          wg*)
+            : ;;
+          *)
+            echo "WireGuard is not required for this run"
+            exit 0
+            ;;
+        esac
+      fi
+
       missing=""
       for tool in wg wg-quick nft; do
         if ! command -v "$tool" >/dev/null 2>&1; then
@@ -309,23 +324,17 @@ steps:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     run: |
       set -eu
-      cat > /opt/hubrelay/env <<ENVEOF
-      INPUT_AI_API_KEY=${INPUT_AI_API_KEY}
-      INPUT_AI_BASE_URL=${INPUT_AI_BASE_URL}
-      INPUT_AI_MODEL=${INPUT_AI_MODEL}
-      INPUT_AI_PROVIDER=${INPUT_AI_PROVIDER}
-      INPUT_AI_API_MODE=${INPUT_AI_API_MODE}
-      INPUT_CHAT_HISTORY=${INPUT_CHAT_HISTORY}
-      INPUT_PROXY_SESSION_ENABLED=${INPUT_PROXY_SESSION_ENABLED}
-      INPUT_PROXY_SESSION_FORCE=${INPUT_PROXY_SESSION_FORCE}
-      INPUT_PRIVATE_EGRESS_REQUIRED=${INPUT_PRIVATE_EGRESS_REQUIRED}
-      INPUT_PRIVATE_EGRESS_INTERFACE=${INPUT_PRIVATE_EGRESS_INTERFACE}
-      INPUT_PRIVATE_EGRESS_TEST_HOST=${INPUT_PRIVATE_EGRESS_TEST_HOST}
-      INPUT_PRIVATE_EGRESS_FAIL_CLOSED=${INPUT_PRIVATE_EGRESS_FAIL_CLOSED}
-      ENVEOF
-      sed -i 's/^[[:space:]]*//' /opt/hubrelay/env
-      chmod 600 /opt/hubrelay/env
-      chown hubrelay:hubrelay /opt/hubrelay/env
+      env_file="${INPUT_BOT_ENV_FILE:-/opt/hubrelay/env}"
+      {
+        echo "# Auto-generated runtime env for hubrelay host-run"
+        echo "# Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        while IFS= read -r name; do
+          [ -z "$name" ] && continue
+          printf '%s=%s\n' "$name" "${!name}"
+        done < <(compgen -A variable | grep '^INPUT_')
+      } > "$env_file"
+      chmod 600 "$env_file"
+      chown hubrelay:hubrelay "$env_file"
     description: "Render environment file"
 
   - id: install_systemd_unit
@@ -333,9 +342,18 @@ steps:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     run: |
       set -eu
-      after="network-online.target wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
-      wants="network-online.target wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
-      requires="wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
+      after="network-online.target"
+      wants="network-online.target"
+      requires="network-online.target"
+      case "${INPUT_PRIVATE_EGRESS_INTERFACE}" in
+        wg*)
+          after="$after wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
+          wants="$wants wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
+          requires="$requires wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
+          ;;
+        *)
+          ;;
+      esac
       if [ "${INPUT_BOT_APP_WG_ENABLED}" = "true" ]; then
         after="$after wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service ${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
         wants="$wants wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service ${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
@@ -353,7 +371,7 @@ steps:
       Group=hubrelay
       WorkingDirectory=/opt/hubrelay
       Environment=BOT_DB_FILE=/var/lib/hubrelay/bot.db
-      EnvironmentFile=/opt/hubrelay/env
+      EnvironmentFile=${INPUT_BOT_ENV_FILE}
       ExecStart=/opt/hubrelay/bot
       Restart=always
       RestartSec=3
