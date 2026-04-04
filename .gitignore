@@ -3,4 +3,5 @@
 .paas/
 .manual/
 .roadmap/
+.gocache/
 **/*.exe
