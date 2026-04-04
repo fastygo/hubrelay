@@ -1,0 +1,16 @@
+name: Validate LLM Navigator
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate llms.txt freshness
+        run: |
+          bash ./scripts/validate-llms.sh

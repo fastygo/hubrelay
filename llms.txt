@@ -1,56 +1,65 @@
 # HubRelay LLM Navigator
 
-Single-file orientation for first-time onboarding and cross-file navigation.
+Single-file orientation for external and internal LLM onboarding.
+
+## Access and scope
+
+This file is intentionally public and designed to be consumed through raw access at `/llms.txt`.
+
+It is the primary onboarding entrypoint for a model or reader who has zero project context.
+
+Closed/private directories are explicitly excluded:
+- `.manual/*`
+- `.paas/*`
 
 ## What this repository is
 
-HubRelay is a monorepo for a command-control runtime and a dashboard:
+HubRelay is a monorepo for a command-control runtime and an operator dashboard:
 
-- `sshbot` module at repository root: command daemon (`cmd/bot`) with plugins and egress control.
-- `sdk/hubrelay`: Go client SDK for command execution and streaming.
-- `hubcore`: shared dashboard library (auth/locale/shell), imported at build time.
-- `apps/dashboard`: dashboard BFF service (`apps/dashboard/cmd/server`).
-- `apps/dashboard/ui8kit`: reusable UI component toolkit.
+- `sshbot` (repo root): core command daemon (`cmd/bot`) with plugins and outbound policy.
+- `sdk/hubrelay`: typed Go client (`CommandRequest`, `Execute`, `ExecuteStream`).
+- `hubcore`: shared dashboard library (`auth`, `locale`, `shell`) imported at build time.
+- `apps/dashboard`: dashboard service (`apps/dashboard/cmd/server`).
+- `apps/dashboard/ui8kit`: reusable UI toolkit and style system.
 
-`hubcore` is a library, not a running daemon.
+`hubcore` is a Go library, not a runtime process.
 
-## Start here (first read order)
+## Mandatory read order
 
-1) `README.md` (root)
-2) `docs/README.md` (global index)
-3) `docs/overview/README.md`
-4) `docs/getting-started/README.md`
-5) `docs/architecture/README.md`
-6) `docs/local-testing/README.md`
-7) `docs/deploy/README.md`
+1. `README.md`
+2. `docs/README.md`
+3. `docs/overview/README.md`
+4. `docs/getting-started/README.md`
+5. `docs/architecture/README.md`
+6. `docs/deploy/README.md`
+7. `docs/local-testing/README.md`
 
 ## Open sections map
 
-### Root
-- `README.md` — one-page project commands, health checks, and links.
-- `docs/README.md` — documentation index.
-- `.project/README.md` — execution-model oriented project notes.
-- `.project/architecture.md` — module boundaries and operational contracts.
-- `.project/roadmap.md` — current direction and model constraints.
-- `.project/wg/os-enforcement.md` — OS enforcement model (host-level egress fail-closed).
-- `.project/wg/HUBRELAY_SYSTEM_GUIDE.md` — combined app/network mental model.
-- `.project/wg/README.md` — private egress workflow overview.
-- `.project/wg/egress-gateway/README.md` — Marvin gateway role.
-- `.project/core-contracts.md` — protocol contracts.
-- `.project/outbound-model.md` — shared outbound policy model.
-- `.project/security-model.md` — safety and boundary notes.
-- `.project/storage-model.md` — runtime state model and migration policy.
-- `.project/deploy-model.md` — immutable image/binary behavior.
-- `.project/threat-model.md` — concise threat view.
-- `.project/profiles/tunnel-email-openai.md` — one concrete profile.
+### Project governance and architecture
+
+- `.project/README.md`
+- `.project/architecture.md`
+- `.project/roadmap.md`
+- `.project/core-contracts.md`
+- `.project/outbound-model.md`
+- `.project/security-model.md`
+- `.project/threat-model.md`
+- `.project/storage-model.md`
+- `.project/deploy-model.md`
+- `.project/profiles/tunnel-email-openai.md`
 - `.project/adr/0001-immutable-deploy-profile.md`
 - `.project/adr/0002-secrets-outside-runtime-state.md`
 - `.project/adr/0003-bbolt-as-runtime-state.md`
-- `.roadmap/sdk-relay-hub.md` — implementation recap and execution model.
-- `.roadmap/checklist.md` — prioritized engineering plan.
+- `.roadmap/sdk-relay-hub.md`
+- `.roadmap/checklist.md`
 
-### Core runtime docs
-- `docs/architecture/README.md`
+### Runtime and networking
+
+- `.project/wg/README.md`
+- `.project/wg/HUBRELAY_SYSTEM_GUIDE.md`
+- `.project/wg/egress-gateway/README.md`
+- `.project/wg/os-enforcement.md`
 - `docs/network-tunnel-and-proxy/README.md`
 - `docs/providers-and-ai/README.md`
 - `docs/egress.md`
@@ -58,12 +67,11 @@ HubRelay is a monorepo for a command-control runtime and a dashboard:
 - `docs/security-and-privacy/README.md`
 - `docs/sdk.md`
 - `docs/operations/README.md`
-- `docs/local-testing/README.md`
-- `docs/deploy/README.md`
-- `apps/dashboard/docs/fixtures-and-runtime.md`
 
-### Dashboard
+### Dashboard and UI kit
+
 - `apps/dashboard/README.md`
+- `apps/dashboard/docs/fixtures-and-runtime.md`
 - `apps/dashboard/ui8kit/README.md`
 - `apps/dashboard/ui8kit/docs/README.md`
 - `apps/dashboard/ui8kit/docs/design-principles.md`
@@ -103,7 +111,7 @@ go build ./cmd/bot
 go build ./apps/dashboard/cmd/server
 ```
 
-### Local dashboard setup
+### Dashboard asset bootstrap
 
 ```bash
 cd apps/dashboard
@@ -114,7 +122,7 @@ npm run build:css
 templ generate ./...
 ```
 
-### Runtime checks
+### Runtime smoke checks
 
 ```bash
 curl -s http://127.0.0.1:5500/healthz
@@ -123,24 +131,61 @@ curl -s -X POST http://127.0.0.1:5500/api/command \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
 ```
 
-### Egress/safety checks
+### Dashboard runtime
 
 ```bash
-INPUT_AI_API_KEY=<YOUR_KEY> INPUT_AI_BASE_URL=<BASE_URL> INPUT_AI_MODEL=<MODEL> INPUT_AI_API_MODE=chat_completions INPUT_PROXY_SESSION_ENABLED=false INPUT_PRIVATE_EGRESS_REQUIRED=true INPUT_PRIVATE_EGRESS_INTERFACE=wg0 INPUT_PRIVATE_EGRESS_TEST_HOST=10.88.0.1 INPUT_PRIVATE_EGRESS_FAIL_CLOSED=true go run ./cmd/bot
+APP_DATA_SOURCE=live go run ./apps/dashboard/cmd/server
+APP_DATA_SOURCE=fixture APP_AUTH_DISABLED=true go run ./apps/dashboard/cmd/server
 ```
 
-## For LLM context prioritization
+### Egress-aware startup example
 
-- Prioritize `README.md`, `docs/README.md`, `docs/overview/README.md`, `docs/getting-started/README.md` first.
-- Resolve architecture from `.project/architecture.md` and `.roadmap/sdk-relay-hub.md` next.
-- Use `docs/*` for operational flow before reading any implementation details.
-- For command contract details, start with `.project/core-contracts.md`, `docs/sdk.md`, and `docs/streaming.md`.
-- For security boundaries, check `.project/security-model.md`, `.project/threat-model.md`, and `docs/security-and-privacy/README.md`.
+```bash
+INPUT_AI_API_KEY=<YOUR_AI_API_KEY> \
+INPUT_AI_BASE_URL=<BASE_URL> \
+INPUT_AI_MODEL=<MODEL> \
+INPUT_AI_API_MODE=chat_completions \
+INPUT_PROXY_SESSION_ENABLED=false \
+INPUT_PRIVATE_EGRESS_REQUIRED=true \
+INPUT_PRIVATE_EGRESS_INTERFACE=wg0 \
+INPUT_PRIVATE_EGRESS_TEST_HOST=10.88.0.1 \
+INPUT_PRIVATE_EGRESS_FAIL_CLOSED=true \
+go run ./cmd/bot
+```
+
+## Update policy (public guidance)
+
+This file is the first onboarding artifact and should be treated as the single source of repo-wide navigation.
+After any production-facing code/documentation change, sections and links in this file must be rechecked and synchronized.
 
 ## Index policy
 
-Expose:
-- `index`: `/README.md`
-- `docs`: `/docs/README.md`
-- `project`: `/.project/README.md`
-- `roadmap`: `/.roadmap/checklist.md`
+Expose these public entry points:
+- `/README.md`
+- `/docs/README.md`
+- `/docs/overview/README.md`
+- `/.project/README.md`
+- `/.roadmap/checklist.md`
+
+Do not expose private playbooks by default:
+- `.manual/*`
+- `.paas/*`
+
+```json
+{
+  "name": "HubRelay",
+  "version": "1.0",
+  "scope": "public-docs",
+  "raw_path": "/llms.txt",
+  "entrypoints": [
+    "/README.md",
+    "/docs/README.md",
+    "/docs/overview/README.md",
+    "/.project/README.md",
+    "/.roadmap/checklist.md"
+  ],
+  "exclude": [".manual", ".paas"],
+  "attribution": "HubRelay contributors",
+  "last_updated": "2026-04-04"
+}
+```

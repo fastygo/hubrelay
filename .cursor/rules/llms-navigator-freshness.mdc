@@ -1,0 +1,31 @@
+---
+description: Keep llms.txt synchronized with repository changes
+alwaysApply: true
+---
+
+# LLM Navigator Freshness
+
+## Hard requirement
+
+Any change to public-facing structure, onboarding instructions, command contracts, runtime model, deployment behavior, or operational documentation must update `llms.txt` in the same change.
+
+## Required updates
+
+- If new files/folders are added, include them when they affect onboarding orientation.
+- If files are removed/renamed, remove or update stale links immediately.
+- If commands or env conventions change, update the command matrix in `llms.txt`.
+- If public/private scope changes, update the exposed/excluded policy immediately.
+
+## Exclusions
+
+This rule does not apply to edits fully contained in:
+- `.manual/*`
+- `.paas/*`
+
+## Validation
+
+Before handing off, confirm:
+1) `llms.txt` contains valid links and section order.
+2) no closed/private directories are exposed by default.
+3) navigation still starts from `README.md` and `docs/README.md`.
+
