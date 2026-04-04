@@ -1,6 +1,6 @@
 id: bootstrap-hostrun
 name: Bootstrap Host-Run Service
-description: Create system user, directories, systemd unit, cross-compile binary, upload, and start the host-run service
+description: Create the HubRelay host-run runtime, provision wg-app0 for BFF access, upload the binary, and start the service
 
 inputs:
   - name: bot_name
@@ -22,7 +22,7 @@ inputs:
   - name: bot_http_bind
     label: HTTP bind address
     type: text
-    default: 127.0.0.1:5500
+    default: 0.0.0.0:5500
   - name: bot_email_enabled
     label: Enable email adapter capability
     type: text
@@ -87,6 +87,34 @@ inputs:
     label: Block provider requests when private egress validation fails
     type: text
     default: "true"
+  - name: bot_app_wg_enabled
+    label: Enable dedicated wg-app0 interface for dashboard access
+    type: text
+    default: "true"
+  - name: bot_app_wg_interface
+    label: Dashboard WireGuard interface name
+    type: text
+    default: wg-app0
+  - name: bot_app_wg_address
+    label: Dashboard WireGuard server address with CIDR
+    type: text
+    default: 10.89.0.1/24
+  - name: bot_app_wg_listen_port
+    label: Dashboard WireGuard UDP listen port
+    type: text
+    default: "51830"
+  - name: bot_app_wg_peer_subnet
+    label: Dashboard peer subnet allowed to reach the API
+    type: text
+    default: 10.89.0.0/24
+  - name: bot_app_firewall_service_name
+    label: systemd unit for dashboard API firewall policy
+    type: text
+    default: hubrelay-api-firewall.service
+  - name: bot_app_firewall_rules_path
+    label: nftables rules file for dashboard API policy
+    type: text
+    default: /etc/nftables.d/hubrelay-api.nft
   - name: tag
     label: Override tag (leave empty for git SHA)
     type: text
@@ -100,6 +128,26 @@ steps:
     capture: git_sha
     description: "Get git SHA"
     local: true
+
+  - id: install_network_tools
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      missing=""
+      for tool in wg wg-quick nft; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+          missing="yes"
+        fi
+      done
+      if [ -z "$missing" ]; then
+        echo "WireGuard and nftables tools already installed"
+        exit 0
+      fi
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y wireguard wireguard-tools nftables
+    description: "Install WireGuard and nftables tools"
 
   - id: create_system_user
     env:
@@ -119,9 +167,111 @@ steps:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     run: |
       set -eu
-      mkdir -p /opt/hubrelay /var/lib/hubrelay
+      mkdir -p /opt/hubrelay /var/lib/hubrelay /etc/wireguard /etc/nftables.d
       chown hubrelay:hubrelay /opt/hubrelay /var/lib/hubrelay
-    description: "Create runtime directories"
+      chmod 700 /etc/wireguard
+    description: "Create runtime and network directories"
+
+  - id: ensure_app_wireguard_key
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" != "true" ]; then
+        exit 0
+      fi
+      umask 077
+      key_file="/etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.key"
+      pub_file="/etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.pub"
+      if [ ! -s "$key_file" ] || [ ! -s "$pub_file" ]; then
+        wg genkey | tee "$key_file" | wg pubkey > "$pub_file"
+      fi
+      chmod 600 "$key_file" "$pub_file"
+    description: "Generate server keypair for wg-app0"
+
+  - id: render_app_wireguard_config
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" != "true" ]; then
+        systemctl disable --now "wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service" 2>/dev/null || true
+        rm -f "/etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.conf"
+        exit 0
+      fi
+      private_key="$(cat "/etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.key")"
+      cat > "/etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.conf" <<WGEOF
+      [Interface]
+      Address = ${INPUT_BOT_APP_WG_ADDRESS}
+      ListenPort = ${INPUT_BOT_APP_WG_LISTEN_PORT}
+      PrivateKey = ${private_key}
+      SaveConfig = false
+      WGEOF
+      sed -i 's/^[[:space:]]*//' "/etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.conf"
+      chmod 600 "/etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.conf"
+    description: "Render wg-app0 server config"
+
+  - id: start_app_wireguard
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" != "true" ]; then
+        exit 0
+      fi
+      systemctl enable "wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service"
+      systemctl restart "wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service"
+    description: "Enable and start wg-app0"
+
+  - id: render_api_firewall
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      unit_path="/etc/systemd/system/${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" != "true" ]; then
+        systemctl disable --now "${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}" 2>/dev/null || true
+        rm -f "${INPUT_BOT_APP_FIREWALL_RULES_PATH}" "$unit_path"
+        systemctl daemon-reload
+        exit 0
+      fi
+      mkdir -p "$(dirname "${INPUT_BOT_APP_FIREWALL_RULES_PATH}")"
+      api_port="${INPUT_BOT_HTTP_BIND##*:}"
+      cat > "${INPUT_BOT_APP_FIREWALL_RULES_PATH}" <<RULESEOF
+      table inet hubrelay_api {
+        chain input {
+          type filter hook input priority 0;
+          policy accept;
+          tcp dport ${api_port} iifname "lo" accept
+          tcp dport ${api_port} iifname "${INPUT_BOT_APP_WG_INTERFACE}" ip saddr ${INPUT_BOT_APP_WG_PEER_SUBNET} accept
+          tcp dport ${api_port} reject with icmpx type admin-prohibited
+        }
+      }
+      RULESEOF
+      sed -i 's/^[[:space:]]*//' "${INPUT_BOT_APP_FIREWALL_RULES_PATH}"
+      chmod 600 "${INPUT_BOT_APP_FIREWALL_RULES_PATH}"
+      cat > "$unit_path" <<UNIT
+      [Unit]
+      Description=HubRelay API ingress firewall
+      After=network-online.target wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service
+      Wants=network-online.target wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service
+      Requires=wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c 'nft delete table inet hubrelay_api 2>/dev/null || true; nft -f ${INPUT_BOT_APP_FIREWALL_RULES_PATH}'
+      ExecReload=/bin/sh -c 'nft delete table inet hubrelay_api 2>/dev/null || true; nft -f ${INPUT_BOT_APP_FIREWALL_RULES_PATH}'
+      ExecStop=/bin/sh -c 'nft delete table inet hubrelay_api 2>/dev/null || true'
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+      UNIT
+      sed -i 's/^[[:space:]]*//' "$unit_path"
+      systemctl daemon-reload
+      systemctl enable "${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+      systemctl restart "${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+    description: "Render restricted API firewall policy"
 
   - id: cross_compile
     run: |
@@ -188,12 +338,20 @@ steps:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     run: |
       set -eu
-      cat > /etc/systemd/system/hubrelay.service <<'UNIT'
+      after="network-online.target wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
+      wants="network-online.target wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
+      requires="wg-quick@${INPUT_PRIVATE_EGRESS_INTERFACE}.service"
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" = "true" ]; then
+        after="$after wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service ${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+        wants="$wants wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service ${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+        requires="$requires wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service ${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+      fi
+      cat > /etc/systemd/system/hubrelay.service <<UNIT
       [Unit]
       Description=HubRelay host-run service
-      After=network-online.target wg-quick@wg0.service
-      Wants=network-online.target wg-quick@wg0.service
-      Requires=wg-quick@wg0.service
+      After=${after}
+      Wants=${wants}
+      Requires=${requires}
 
       [Service]
       User=hubrelay
@@ -221,6 +379,12 @@ steps:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     run: |
       set -eu
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" = "true" ]; then
+        systemctl enable "wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service"
+        systemctl restart "wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service"
+        systemctl enable "${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+        systemctl restart "${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}"
+      fi
       systemctl enable hubrelay.service
       systemctl start hubrelay.service
     description: "Enable and start service"
@@ -231,8 +395,7 @@ steps:
     run: |
       set -eu
       for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
-        if curl --fail --show-error --silent \
-          "${INPUT_BOT_URL}/healthz" >/dev/null; then
+        if curl --fail --show-error --silent "${INPUT_BOT_URL}/healthz" >/dev/null; then
           exit 0
         fi
         sleep 5
@@ -240,6 +403,21 @@ steps:
       echo "Bot did not become ready at ${INPUT_BOT_URL}"
       exit 1
     description: "Verify bot health"
+
+  - id: verify_app_ingress_stack
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" != "true" ]; then
+        exit 0
+      fi
+      systemctl status "wg-quick@${INPUT_BOT_APP_WG_INTERFACE}.service" --no-pager >/dev/null
+      systemctl status "${INPUT_BOT_APP_FIREWALL_SERVICE_NAME}" --no-pager >/dev/null
+      app_ip="$(printf '%s\n' "${INPUT_BOT_APP_WG_ADDRESS}" | cut -d/ -f1)"
+      api_port="${INPUT_BOT_HTTP_BIND##*:}"
+      curl --fail --show-error --silent "http://${app_ip}:${api_port}/healthz" >/dev/null
+    description: "Verify wg-app0 ingress path"
 
   - id: smoke_test_command
     env:
@@ -257,7 +435,14 @@ steps:
       set -eu
       echo "Binary: /opt/hubrelay/bot (sha: ${STEP_GIT_SHA})"
       echo "Service: hubrelay.service (host-run)"
-      echo "URL: ${INPUT_BOT_URL}"
+      echo "Loopback URL: ${INPUT_BOT_URL}"
+      if [ "${INPUT_BOT_APP_WG_ENABLED}" = "true" ]; then
+        app_ip="$(printf '%s\n' "${INPUT_BOT_APP_WG_ADDRESS}" | cut -d/ -f1)"
+        public_key="$(ssh ${SERVER_USER}@${SERVER_HOST} "cat /etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.pub" 2>/dev/null || true)"
+        echo "Dashboard WireGuard URL: http://${app_ip}:${INPUT_BOT_HTTP_BIND##*:}"
+        echo "Dashboard WireGuard endpoint: ${SERVER_HOST}:${INPUT_BOT_APP_WG_LISTEN_PORT}/udp"
+        echo "Dashboard WireGuard public key: ${public_key}"
+      fi
       echo "SSH tunnel: ssh -L 5500:127.0.0.1:5500 root@${SERVER_HOST}"
     description: "Print runtime information"
     local: true

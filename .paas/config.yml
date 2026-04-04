@@ -1,28 +1,29 @@
 server: production
 
 defaults:
-  INPUT_BOT_NAME: hub-bot
-  INPUT_REGISTRY_HOST: your.registry.host.com
-  INPUT_IMAGE_REPOSITORY: your/repository
-  INPUT_BOT_URL: http://127.0.0.1:5500
-  INPUT_BOT_PROFILE_ID: tunnel-email-openai
-  INPUT_BOT_DISPLAY_NAME: Tunnel chat + Yandex mail + OpenAI
-  INPUT_BOT_HTTP_BIND: 0.0.0.0:5500
-  INPUT_BOT_EMAIL_ENABLED: "true"
-  INPUT_BOT_EMAIL_PROVIDER: yandex
-  INPUT_BOT_EMAIL_MODE: scaffold
-  INPUT_BOT_OPENAI_ENABLED: "true"
-  INPUT_AI_PROVIDER: your-provider
-  INPUT_AI_BASE_URL: "https://api.your-provider.com/v1"
-  INPUT_AI_MODEL: your-model
-  INPUT_AI_API_MODE: chat_completions
-  INPUT_CHAT_HISTORY: "false"
-  INPUT_PROXY_SESSION_ENABLED: "true"
-  INPUT_PROXY_SESSION_FORCE: "true"
-  INPUT_PRIVATE_EGRESS_REQUIRED: "false"
-  INPUT_PRIVATE_EGRESS_INTERFACE: ""
-  INPUT_PRIVATE_EGRESS_TEST_HOST: ""
-  INPUT_PRIVATE_EGRESS_FAIL_CLOSED: "false"
-  # INPUT_TAG: ""
+  INPUT_APP_NAME: hubrelay-dashboard
+  INPUT_APP_URL: http://127.0.0.1:8080
+  INPUT_APP_BIND: 127.0.0.1:8080
+  INPUT_APP_DATA_SOURCE: live
+  INPUT_APP_ADMIN_USER: admin
+  INPUT_APP_AUTH_DISABLED: "false"
+  INPUT_APP_SSH_USER: root
+  INPUT_HUBRELAY_TRANSPORT: http
+  INPUT_HUBRELAY_BASE_URL: http://127.0.0.1:5500
+  INPUT_HUBRELAY_SOCKET_PATH: /run/hubrelay/hubrelay.sock
+  INPUT_APP_SERVICE_NAME: hubrelay-dashboard.service
+  INPUT_APP_SYSTEM_USER: hubdash
+  INPUT_APP_RUNTIME_DIR: /opt/hubrelay-dashboard
+  INPUT_APP_ENV_FILE: /etc/hubrelay-dashboard/dashboard.env
+  INPUT_APP_LOCAL_TUNNEL_PORT: "18080"
+  INPUT_APP_WG_INTERFACE: wg-app0
+  INPUT_APP_WG_ADDRESS: 10.89.0.2/32
+  INPUT_APP_WG_PERSISTENT_KEEPALIVE: "25"
+  INPUT_HUBRELAY_SSH_USER: root
+  INPUT_HUBRELAY_WG_SERVER_PUBLIC_KEY_FILE: /etc/wireguard/wg-app0.pub
+  INPUT_HUBRELAY_WG_SERVER_CONFIG: /etc/wireguard/wg-app0.conf
+  INPUT_HUBRELAY_WG_SERVER_RELOAD_UNIT: wg-quick@wg-app0.service
+  INPUT_HUBRELAY_WG_ENDPOINT_PORT: "51830"
+  INPUT_HUBRELAY_WG_ALLOWED_IPS: 10.89.0.1/32
 
 extensions_dir: .paas/extensions

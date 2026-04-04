@@ -1,5 +1,6 @@
 /data/
 /bot
+.paas/
 .manual/
 .roadmap/
 **/*.exe
