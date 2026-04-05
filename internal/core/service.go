@@ -42,7 +42,7 @@ type dispatchState struct {
 }
 
 func NewService(profile buildprofile.Profile, store Store, plugins []Plugin, options ...ServiceOption) (*Service, error) {
-	if err := store.EnsureSchema(profile); err != nil {
+	if err := store.EnsureSchema(profile.RuntimeProfile()); err != nil {
 		return nil, err
 	}
 
@@ -84,8 +84,9 @@ func (s *Service) Execute(ctx context.Context, envelope CommandEnvelope) (Comman
 	}
 
 	result, err := state.plugin.Execute(ctx, CommandContext{
-		Profile: s.profile,
+		Profile: s.profile.RuntimeProfile(),
 		Store:   s.store,
+		Config:  cloneStringMap(s.profile.Config),
 	}, state.envelope)
 	if err != nil {
 		result.Status = "error"
@@ -122,8 +123,9 @@ func (s *Service) ExecuteStream(ctx context.Context, envelope CommandEnvelope, w
 	}
 
 	commandCtx := CommandContext{
-		Profile: s.profile,
+		Profile: s.profile.RuntimeProfile(),
 		Store:   s.store,
+		Config:  cloneStringMap(s.profile.Config),
 	}
 
 	var executeErr error
@@ -211,6 +213,7 @@ func (s *Service) prepareDispatch(envelope CommandEnvelope) (dispatchState, erro
 	for _, capability := range descriptor.RequiredCapabilities {
 		if !s.profile.Has(capability) {
 			result := CommandResult{
+				Code:    "capability_unavailable",
 				Status:  "error",
 				Message: fmt.Sprintf("capability %s is not available in profile %s", capability, s.profile.ID),
 			}
@@ -224,6 +227,7 @@ func (s *Service) prepareDispatch(envelope CommandEnvelope) (dispatchState, erro
 
 	if blocked := scanSensitiveAsk(envelope); blocked.Blocked {
 		result := CommandResult{
+			Code:    "sensitive_data",
 			Status:  "error",
 			Message: "request blocked by sensitive data policy",
 			Data: map[string]any{
@@ -314,4 +318,15 @@ func resultStreamChunk(result CommandResult) (StreamChunk, bool) {
 		return StreamChunk{}, false
 	}
 	return StreamChunk{Delta: answer}, true
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
 }

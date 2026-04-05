@@ -22,6 +22,10 @@ func Builtins() []core.Plugin {
 	}
 }
 
+func Factory(core.PluginFactoryContext) ([]core.Plugin, error) {
+	return Builtins(), nil
+}
+
 type CapabilitiesPlugin struct{}
 
 func (CapabilitiesPlugin) Descriptor() core.PluginDescriptor {
@@ -37,7 +41,7 @@ func (CapabilitiesPlugin) Descriptor() core.PluginDescriptor {
 func (CapabilitiesPlugin) Execute(_ context.Context, cmdCtx core.CommandContext, _ core.CommandEnvelope) (core.CommandResult, error) {
 	capabilities := make([]string, 0, len(cmdCtx.Profile.Capabilities))
 	for _, capability := range cmdCtx.Profile.Capabilities {
-		capabilities = append(capabilities, string(capability))
+		capabilities = append(capabilities, capability)
 	}
 
 	return core.CommandResult{
@@ -47,17 +51,18 @@ func (CapabilitiesPlugin) Execute(_ context.Context, cmdCtx core.CommandContext,
 			"profile_id":     cmdCtx.Profile.ID,
 			"display_name":   cmdCtx.Profile.DisplayName,
 			"capabilities":   capabilities,
-			"http_bind":      cmdCtx.Profile.HTTPChat.BindAddress,
-			"email_enabled":  cmdCtx.Profile.Email.Enabled,
-			"ai_enabled":     cmdCtx.Profile.OpenAI.Enabled,
-			"ai_provider":    cmdCtx.Profile.OpenAI.Provider,
-			"ai_base_url":    cmdCtx.Profile.OpenAI.BaseURL,
-			"ai_model":       cmdCtx.Profile.OpenAI.Model,
-			"ai_api_mode":    cmdCtx.Profile.OpenAI.APIMode,
-			"chat_history":   cmdCtx.Profile.OpenAI.ChatHistory,
-			"ai_has_api_key": cmdCtx.Profile.OpenAI.HasAPIKey,
-			"proxy_session":  cmdCtx.Profile.ProxySession.Enabled,
-			"proxy_force":    cmdCtx.Profile.ProxySession.Force,
+			"config":         cloneConfig(cmdCtx.Profile.Config),
+			"http_bind":      cmdCtx.Profile.Config["http_bind"],
+			"email_enabled":  isTruthy(cmdCtx.Profile.Config["email_enabled"]),
+			"ai_enabled":     isTruthy(cmdCtx.Profile.Config["ai_enabled"]),
+			"ai_provider":    cmdCtx.Profile.Config["ai_provider"],
+			"ai_base_url":    cmdCtx.Profile.Config["ai_base_url"],
+			"ai_model":       cmdCtx.Profile.Config["ai_model"],
+			"ai_api_mode":    cmdCtx.Profile.Config["ai_api_mode"],
+			"chat_history":   isTruthy(cmdCtx.Profile.Config["chat_history"]),
+			"ai_has_api_key": isTruthy(cmdCtx.Profile.Config["ai_has_api_key"]),
+			"proxy_session":  isTruthy(cmdCtx.Profile.Config["proxy_session"]),
+			"proxy_force":    isTruthy(cmdCtx.Profile.Config["proxy_force"]),
 		},
 	}, nil
 }
@@ -152,4 +157,24 @@ func (AuditPlugin) Execute(_ context.Context, cmdCtx core.CommandContext, envelo
 			"entries": items,
 		},
 	}, nil
+}
+
+func isTruthy(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func cloneConfig(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
 }

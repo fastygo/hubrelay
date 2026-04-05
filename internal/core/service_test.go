@@ -13,7 +13,7 @@ type memoryStore struct {
 	audit []core.AuditEntry
 }
 
-func (m *memoryStore) EnsureSchema(buildprofile.Profile) error { return nil }
+func (m *memoryStore) EnsureSchema(core.RuntimeProfile) error  { return nil }
 func (m *memoryStore) UpsertPrincipal(core.Principal) error    { return nil }
 func (m *memoryStore) SaveSession(core.SessionState) error     { return nil }
 func (m *memoryStore) Close() error                            { return nil }

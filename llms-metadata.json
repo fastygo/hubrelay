@@ -3,16 +3,17 @@
   "version": "1.0",
   "scope": "public",
   "raw_path": "/llms.txt",
-  "updated": "2026-04-04",
+  "updated": "2026-04-05",
   "navigation": {
     "index": ["/README.md", "/docs/README.md", "/.project/README.md", "/.roadmap/checklist.md"],
-    "core_architecture": [".project/architecture.md", ".project/core-contracts.md", ".project/outbound-model.md"],
+    "core_architecture": [".project/architecture.md", ".project/core-contracts.md", ".project/outbound-model.md", ".project/adr/0004-grpc-sdk-streaming-for-widget-transport.md"],
     "runtime_ops": ["docs/architecture/README.md", "docs/network-tunnel-and-proxy/README.md", "docs/providers-and-ai/README.md", "docs/egress.md", "docs/streaming.md", "docs/operations/README.md", "docs/local-testing/README.md", "docs/deploy/README.md"],
     "dashboard": ["apps/dashboard/README.md", "apps/dashboard/ui8kit/docs/README.md", "apps/dashboard/ui8kit/README.md"]
   },
   "closed": [".manual", ".paas"],
   "entry_commands": [
     "go test ./...",
+    "go build ./...",
     "go build ./cmd/bot",
     "go build ./apps/dashboard/cmd/server",
     "cd apps/dashboard && npm install && npm run build:css && templ generate ./..."

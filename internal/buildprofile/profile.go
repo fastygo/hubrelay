@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"sshbot/internal/egress"
+	"sshbot/pkg/contract"
 )
 
-type Capability string
+type Capability = contract.Capability
 
 const (
 	CapabilityAdapterHTTPChat    Capability = "adapter.http_chat"
@@ -72,6 +73,7 @@ type Profile struct {
 	ID            string
 	DisplayName   string
 	Capabilities  []Capability
+	Config        map[string]string
 	HTTPChat      HTTPChatConfig
 	UnixSocket    UnixSocketConfig
 	Email         EmailConfig
@@ -116,6 +118,19 @@ func (p Profile) Has(capability Capability) bool {
 	return false
 }
 
+func (p Profile) RuntimeProfile() contract.RuntimeProfile {
+	capabilities := make([]contract.Capability, 0, len(p.Capabilities))
+	for _, capability := range p.Capabilities {
+		capabilities = append(capabilities, capability)
+	}
+	return contract.RuntimeProfile{
+		ID:           p.ID,
+		DisplayName:  p.DisplayName,
+		Capabilities: capabilities,
+		Config:       cloneConfigMap(p.Config),
+	}
+}
+
 // Current returns the immutable runtime profile compiled into the image.
 // When compile-time values are empty, environment variables (INPUT_AI_*)
 // are checked so that local `go run ./cmd/bot` works without -ldflags.
@@ -154,6 +169,29 @@ func Current() Profile {
 		ID:           currentProfileID,
 		DisplayName:  currentDisplayName,
 		Capabilities: capabilities,
+		Config: map[string]string{
+			"http_bind":                currentHTTPBind,
+			"email_enabled":            currentEmailEnabled,
+			"email_provider":           currentEmailProvider,
+			"email_mode":               currentEmailMode,
+			"unix_socket_enabled":      currentUnixSocketEnabled,
+			"unix_socket_path":         strings.TrimSpace(currentUnixSocketPath),
+			"ai_enabled":               currentOpenAIEnabled,
+			"ai_provider":              strings.TrimSpace(strings.ToLower(currentAIProvider)),
+			"ai_base_url":              strings.TrimSpace(currentAIBaseURL),
+			"ai_model":                 strings.TrimSpace(currentAIModel),
+			"ai_api_mode":              normalizeAIAPIMode(currentAIAPIMode),
+			"ai_has_api_key":           boolString(hasAIKey),
+			"chat_history":             currentChatHistory,
+			"proxy_session":            currentProxySession,
+			"proxy_force":              currentProxyForce,
+			"private_egress_required":  currentPrivateEgressRequired,
+			"private_egress_interface": strings.TrimSpace(currentPrivateEgressInterface),
+			"private_egress_test_host": strings.TrimSpace(currentPrivateEgressTestHost),
+			"private_egress_fail_closed": currentPrivateEgressFailClosed,
+			"egress_gateways":            currentEgressGateways,
+			"egress_check_interval":      currentEgressCheckInterval,
+		},
 		HTTPChat: HTTPChatConfig{
 			Enabled:     currentHTTPBind != "",
 			BindAddress: currentHTTPBind,
@@ -242,4 +280,22 @@ func normalizeAIAPIMode(value string) string {
 	default:
 		return "chat_completions"
 	}
+}
+
+func boolString(value bool) string {
+	if value {
+		return "true"
+	}
+	return "false"
+}
+
+func cloneConfigMap(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
 }

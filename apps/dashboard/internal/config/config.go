@@ -12,6 +12,7 @@ const (
 	RoleHub           = "hub"
 	RoleRemote        = "remote"
 	TransportHTTP     = "http"
+	TransportGRPC     = "grpc"
 	TransportUnix     = "unix"
 	DataSourceLive    = "live"
 	DataSourceFixture = "fixture"
@@ -61,6 +62,9 @@ func Load() (Config, error) {
 			if strings.TrimSpace(cfg.HubRelayBaseURL) == "" {
 				return Config{}, fmt.Errorf("HUBRELAY_BASE_URL must not be empty for http transport")
 			}
+		case TransportGRPC:
+			// Reserved for the future gRPC transport.
+			// Keep config validation open so the transport slot is stable across refactors.
 		case TransportUnix:
 			if strings.TrimSpace(cfg.HubRelaySocketPath) == "" {
 				return Config{}, fmt.Errorf("HUBRELAY_SOCKET_PATH must not be empty for unix transport")

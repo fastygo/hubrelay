@@ -18,7 +18,7 @@ func TestBboltStorePersistsAuditEntries(t *testing.T) {
 	}
 	defer store.Close()
 
-	if err := store.EnsureSchema(buildprofile.Current()); err != nil {
+	if err := store.EnsureSchema(buildprofile.Current().RuntimeProfile()); err != nil {
 		t.Fatalf("EnsureSchema() error = %v", err)
 	}
 

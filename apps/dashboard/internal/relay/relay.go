@@ -32,14 +32,14 @@ func New(cfg config.Config) (*Client, error) {
 		Roles:   []string{"operator"},
 	}
 
-	var client *hubrelay.Client
-	switch cfg.Transport {
-	case config.TransportHTTP:
-		client = hubrelay.NewHTTPClient(cfg.HubRelayBaseURL, hubrelay.WithPrincipal(principal))
-	case config.TransportUnix:
-		client = hubrelay.NewUnixClient(cfg.HubRelaySocketPath, hubrelay.WithPrincipal(principal))
-	default:
-		return nil, fmt.Errorf("unsupported transport %q", cfg.Transport)
+	client, err := hubrelay.NewClient(
+		cfg.Transport,
+		hubrelay.WithPrincipal(principal),
+		hubrelay.WithBaseURL(cfg.HubRelayBaseURL),
+		hubrelay.WithSocketPath(cfg.HubRelaySocketPath),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unsupported transport %q: %w", cfg.Transport, err)
 	}
 
 	return &Client{

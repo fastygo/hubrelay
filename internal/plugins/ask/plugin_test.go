@@ -47,7 +47,7 @@ func (p *fakeStreamingProvider) AskStream(_ context.Context, request ai.AskReque
 
 type noopStore struct{}
 
-func (noopStore) EnsureSchema(buildprofile.Profile) error        { return nil }
+func (noopStore) EnsureSchema(core.RuntimeProfile) error         { return nil }
 func (noopStore) UpsertPrincipal(core.Principal) error           { return nil }
 func (noopStore) SaveSession(core.SessionState) error            { return nil }
 func (noopStore) RecordAudit(core.AuditEntry) error              { return nil }
@@ -77,7 +77,7 @@ func TestAskPluginReturnsAnswerInData(t *testing.T) {
 	plugin := askplugin.New(provider)
 
 	result, err := plugin.Execute(context.Background(), core.CommandContext{
-		Profile: buildprofile.Current(),
+		Profile: buildprofile.Current().RuntimeProfile(),
 		Store:   noopStore{},
 	}, core.CommandEnvelope{
 		Name:    "ask",
@@ -114,7 +114,7 @@ func TestAskPluginExecuteStreamDeliversChunks(t *testing.T) {
 	writer := &collectingStreamWriter{}
 
 	err := plugin.ExecuteStream(context.Background(), core.CommandContext{
-		Profile: buildprofile.Current(),
+		Profile: buildprofile.Current().RuntimeProfile(),
 		Store:   noopStore{},
 	}, core.CommandEnvelope{
 		Name:      "ask",
@@ -147,7 +147,7 @@ func TestAskPluginExecuteStreamFallsBackToAsk(t *testing.T) {
 	writer := &collectingStreamWriter{}
 
 	err := plugin.ExecuteStream(context.Background(), core.CommandContext{
-		Profile: buildprofile.Current(),
+		Profile: buildprofile.Current().RuntimeProfile(),
 		Store:   noopStore{},
 	}, core.CommandEnvelope{
 		Name:      "ask",

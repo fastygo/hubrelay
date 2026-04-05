@@ -187,3 +187,11 @@ func (p Plugin) ExecuteStream(ctx context.Context, cmdCtx core.CommandContext, e
 func Builtins(provider ai.Provider) []core.Plugin {
 	return []core.Plugin{New(provider)}
 }
+
+func Factory(ctx core.PluginFactoryContext) ([]core.Plugin, error) {
+	provider, ok := ctx.Deps["ai_provider"].(ai.Provider)
+	if !ok || provider == nil {
+		return nil, nil
+	}
+	return Builtins(provider), nil
+}

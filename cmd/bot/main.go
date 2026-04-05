@@ -68,12 +68,9 @@ func main() {
 		privateEgressChecker = outbound.NewEgressManagerChecker(egressManager)
 	}
 
-	plugins := systeminfo.Builtins()
-	if egressManager != nil {
-		plugins = append(plugins, egressplugin.NewStatusPlugin(egressManager))
-	}
+	var provider ai.Provider
 	if profile.OpenAI.Enabled && profile.OpenAI.HasAPIKey {
-		provider, providerErr := ai.NewOpenAICompatibleProvider(
+		providerInstance, providerErr := ai.NewOpenAICompatibleProvider(
 			profile.OpenAI.Provider,
 			profile.OpenAI.APIKey,
 			profile.OpenAI.BaseURL,
@@ -87,7 +84,27 @@ func main() {
 		if providerErr != nil {
 			log.Fatalf("failed to configure ai provider: %v", providerErr)
 		}
-		plugins = append(plugins, askplugin.Builtins(provider)...)
+		provider = providerInstance
+	}
+
+	registry := core.NewPluginRegistry()
+	registry.Register("system", systeminfo.Factory)
+	registry.Register("ask", askplugin.Factory)
+	registry.Register("egress", egressplugin.Factory)
+
+	plugins, err := registry.BuildAll(core.PluginFactoryContext{
+		ProfileID:    profile.ID,
+		Capabilities: append([]core.Capability(nil), profile.Capabilities...),
+		Config:       cloneStringMap(profile.Config),
+		Store:        store,
+		Deps: map[string]any{
+			"egress_manager": egressManager,
+			"proxy_manager":  proxyManager,
+			"ai_provider":    provider,
+		},
+	})
+	if err != nil {
+		log.Fatalf("build plugin registry: %v", err)
 	}
 
 	serviceOptions := make([]core.ServiceOption, 0, 1)
@@ -144,4 +161,15 @@ func main() {
 	}
 
 	wg.Wait()
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
 }

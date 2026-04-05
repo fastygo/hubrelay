@@ -17,6 +17,14 @@ func NewStatusPlugin(manager *egressmgr.Manager) StatusPlugin {
 	return StatusPlugin{manager: manager}
 }
 
+func Factory(ctx core.PluginFactoryContext) ([]core.Plugin, error) {
+	manager, ok := ctx.Deps["egress_manager"].(*egressmgr.Manager)
+	if !ok || manager == nil {
+		return nil, nil
+	}
+	return []core.Plugin{NewStatusPlugin(manager)}, nil
+}
+
 func (p StatusPlugin) Descriptor() core.PluginDescriptor {
 	return core.PluginDescriptor{
 		Name:    "egress-status",

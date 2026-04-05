@@ -9,6 +9,8 @@ type clientConfig struct {
 	timeout    time.Duration
 	httpClient *http.Client
 	principal  Principal
+	baseURL    string
+	socketPath string
 }
 
 type Option func(*clientConfig)
@@ -32,6 +34,18 @@ func WithHTTPClient(client *http.Client) Option {
 func WithPrincipal(principal Principal) Option {
 	return func(cfg *clientConfig) {
 		cfg.principal = principal
+	}
+}
+
+func WithBaseURL(baseURL string) Option {
+	return func(cfg *clientConfig) {
+		cfg.baseURL = baseURL
+	}
+}
+
+func WithSocketPath(socketPath string) Option {
+	return func(cfg *clientConfig) {
+		cfg.socketPath = socketPath
 	}
 }
 

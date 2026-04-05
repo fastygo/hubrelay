@@ -11,8 +11,8 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	"sshbot/internal/buildprofile"
 	"sshbot/internal/core"
+	"sshbot/pkg/contract"
 )
 
 type BboltStore struct {
@@ -35,7 +35,7 @@ func Open(path string) (*BboltStore, error) {
 	return &BboltStore{db: db}, nil
 }
 
-func (s *BboltStore) EnsureSchema(_ buildprofile.Profile) error {
+func (s *BboltStore) EnsureSchema(_ contract.RuntimeProfile) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		for _, bucket := range []string{
 			bucketMeta,

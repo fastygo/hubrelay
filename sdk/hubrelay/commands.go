@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type commandPayload struct {
@@ -16,8 +17,26 @@ type commandPayload struct {
 	Args        map[string]string `json:"args,omitempty"`
 }
 
-func (c *Client) Discover(ctx context.Context) (DiscoveryResponse, error) {
-	response, err := c.transport.Do(ctx, http.MethodGet, "/", nil)
+var (
+	ErrUnsupportedTransport   = errors.New("unsupported transport")
+	ErrTransportNotImplemented = errors.New("transport not implemented yet")
+	ErrUnexpectedStreamType   = errors.New("unexpected stream type")
+)
+
+type commandTransport struct {
+	raw              rawTransport
+	defaultPrincipal Principal
+}
+
+func newCommandTransport(raw rawTransport, principal Principal) CommandTransport {
+	return &commandTransport{
+		raw:              raw,
+		defaultPrincipal: principal,
+	}
+}
+
+func (t *commandTransport) Discover(ctx context.Context) (DiscoveryResponse, error) {
+	response, err := t.raw.Do(ctx, http.MethodGet, "/", nil)
 	if err != nil {
 		return DiscoveryResponse{}, err
 	}
@@ -30,8 +49,8 @@ func (c *Client) Discover(ctx context.Context) (DiscoveryResponse, error) {
 	return discovery, nil
 }
 
-func (c *Client) Health(ctx context.Context) (HealthResponse, error) {
-	response, err := c.transport.Do(ctx, http.MethodGet, "/healthz", nil)
+func (t *commandTransport) Health(ctx context.Context) (HealthResponse, error) {
+	response, err := t.raw.Do(ctx, http.MethodGet, "/healthz", nil)
 	if err != nil {
 		return HealthResponse{}, err
 	}
@@ -44,8 +63,8 @@ func (c *Client) Health(ctx context.Context) (HealthResponse, error) {
 	return health, nil
 }
 
-func (c *Client) Capabilities(ctx context.Context, principal Principal) (CapabilitiesResponse, error) {
-	result, err := c.Execute(ctx, CommandRequest{
+func (t *commandTransport) Capabilities(ctx context.Context, principal Principal) (CapabilitiesResponse, error) {
+	result, err := t.Execute(ctx, CommandRequest{
 		Principal: principal,
 		Command:   "capabilities",
 	})
@@ -63,12 +82,12 @@ func (c *Client) Capabilities(ctx context.Context, principal Principal) (Capabil
 	return response, nil
 }
 
-func (c *Client) Execute(ctx context.Context, req CommandRequest) (CommandResult, error) {
+func (t *commandTransport) Execute(ctx context.Context, req CommandRequest) (CommandResult, error) {
 	payload := commandPayload{
 		Command: req.Command,
 		Args:    req.Args,
 	}
-	principal := c.principalOrDefault(req.Principal)
+	principal := t.principalOrDefault(req.Principal)
 	payload.PrincipalID = principal.ID
 	payload.Roles = append([]string(nil), principal.Roles...)
 
@@ -77,7 +96,7 @@ func (c *Client) Execute(ctx context.Context, req CommandRequest) (CommandResult
 		return CommandResult{}, err
 	}
 
-	response, err := c.transport.Do(ctx, http.MethodPost, "/api/command", bytes.NewReader(body))
+	response, err := t.raw.Do(ctx, http.MethodPost, "/api/command", bytes.NewReader(body))
 	if err != nil {
 		return CommandResult{}, err
 	}
@@ -90,12 +109,12 @@ func (c *Client) Execute(ctx context.Context, req CommandRequest) (CommandResult
 	return result, nil
 }
 
-func (c *Client) ExecuteStream(ctx context.Context, req CommandRequest) (*Stream, error) {
+func (t *commandTransport) ExecuteStream(ctx context.Context, req CommandRequest) (ResultStream, error) {
 	payload := commandPayload{
 		Command: req.Command,
 		Args:    req.Args,
 	}
-	principal := c.principalOrDefault(req.Principal)
+	principal := t.principalOrDefault(req.Principal)
 	payload.PrincipalID = principal.ID
 	payload.Roles = append([]string(nil), principal.Roles...)
 
@@ -104,7 +123,7 @@ func (c *Client) ExecuteStream(ctx context.Context, req CommandRequest) (*Stream
 		return nil, err
 	}
 
-	response, err := c.transport.Do(ctx, http.MethodPost, "/api/command/stream", bytes.NewReader(body))
+	response, err := t.raw.Do(ctx, http.MethodPost, "/api/command/stream", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +138,8 @@ func (c *Client) ExecuteStream(ctx context.Context, req CommandRequest) (*Stream
 	return newStream(response), nil
 }
 
-func (c *Client) EgressStatus(ctx context.Context, principal Principal) (EgressStatusResponse, error) {
-	result, err := c.Execute(ctx, CommandRequest{
+func (t *commandTransport) EgressStatus(ctx context.Context, principal Principal) (EgressStatusResponse, error) {
+	result, err := t.Execute(ctx, CommandRequest{
 		Principal: principal,
 		Command:   "egress-status",
 	})
@@ -136,6 +155,23 @@ func (c *Client) EgressStatus(ctx context.Context, principal Principal) (EgressS
 		return EgressStatusResponse{}, err
 	}
 	return response, nil
+}
+
+func (t *commandTransport) Close() error {
+	if t == nil || t.raw == nil {
+		return nil
+	}
+	return t.raw.Close()
+}
+
+func (t *commandTransport) principalOrDefault(principal Principal) Principal {
+	if strings.TrimSpace(principal.ID) == "" {
+		principal = t.defaultPrincipal
+	}
+	if strings.TrimSpace(principal.Display) == "" {
+		principal.Display = principal.ID
+	}
+	return principal
 }
 
 func decodeResultData(data map[string]any, target any) error {

@@ -2,6 +2,7 @@ package source
 
 import (
 	"context"
+	"strings"
 
 	hubrelay "github.com/fastygo/hubrelay-sdk"
 	"hubrelay-dashboard/internal/relay"
@@ -51,17 +52,18 @@ func (s *Live) Capabilities(ctx context.Context) (CapabilitiesData, error) {
 		ProfileID:    response.ProfileID,
 		DisplayName:  response.DisplayName,
 		Capabilities: append([]string(nil), response.Capabilities...),
-		HTTPBind:     response.HTTPBind,
-		EmailEnabled: response.EmailEnabled,
-		AIEnabled:    response.AIEnabled,
-		AIProvider:   response.AIProvider,
-		AIBaseURL:    response.AIBaseURL,
-		AIModel:      response.AIModel,
-		AIAPIMode:    response.AIAPIMode,
-		ChatHistory:  response.ChatHistory,
-		AIHasAPIKey:  response.AIHasAPIKey,
-		ProxySession: response.ProxySession,
-		ProxyForce:   response.ProxyForce,
+		Config:       cloneStringMap(response.Config),
+		HTTPBind:     firstString(response.HTTPBind, response.Config["http_bind"]),
+		EmailEnabled: boolFromConfig(response.EmailEnabled, response.Config, "email_enabled"),
+		AIEnabled:    boolFromConfig(response.AIEnabled, response.Config, "ai_enabled"),
+		AIProvider:   firstString(response.AIProvider, response.Config["ai_provider"]),
+		AIBaseURL:    firstString(response.AIBaseURL, response.Config["ai_base_url"]),
+		AIModel:      firstString(response.AIModel, response.Config["ai_model"]),
+		AIAPIMode:    firstString(response.AIAPIMode, response.Config["ai_api_mode"]),
+		ChatHistory:  boolFromConfig(response.ChatHistory, response.Config, "chat_history"),
+		AIHasAPIKey:  boolFromConfig(response.AIHasAPIKey, response.Config, "ai_has_api_key"),
+		ProxySession: boolFromConfig(response.ProxySession, response.Config, "proxy_session"),
+		ProxyForce:   boolFromConfig(response.ProxyForce, response.Config, "proxy_force"),
 	}, nil
 }
 
@@ -192,4 +194,41 @@ func cloneMap(input map[string]any) map[string]any {
 		out[key] = value
 	}
 	return out
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	if input == nil {
+		return nil
+	}
+
+	out := make(map[string]string, len(input))
+	for key, value := range input {
+		out[key] = value
+	}
+	return out
+}
+
+func firstString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func boolFromConfig(current bool, config map[string]string, key string) bool {
+	if current {
+		return true
+	}
+	value, ok := config[key]
+	if !ok {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }

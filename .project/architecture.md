@@ -32,9 +32,10 @@ flowchart TD
 ```
 
 ## Contracts
-- `Principal`: normalized identity with roles and transport metadata.
-- `CommandEnvelope`: transport-neutral request with command name, arguments, metadata, and correlation ID.
-- `CommandResult`: structured response with text, data payload, and policy flags.
+- Shared contracts live in `pkg/contract` and are imported by runtime, SDK, and future app consumers.
+- `Principal`: normalized identity with roles, scope, transport metadata, and version slot.
+- `CommandEnvelope`: transport-neutral request with command name, arguments, metadata, correlation ID, and version slot.
+- `CommandResult`: structured response with text, data payload, policy flags, and machine-readable `code`/`kind`.
 - `Capability`: immutable runtime feature exposed by the deployed image.
 - `Plugin`: typed command handler gated by capabilities and policy.
 - `Adapter`: transport bridge that converts external events into command envelopes and sends responses back.
@@ -49,6 +50,33 @@ flowchart TD
 5. Core dispatches to the matching plugin.
 6. If the plugin needs external egress, it must ask `OutboundPolicy` for a routing decision.
 7. Result is written to audit and returned through the adapter.
+
+## Transport strategy for UI and integrations
+
+The command contract is transport-agnostic. The same command contract should be exposed through multiple transports:
+
+- HTTP JSON is the base transport (`/api/command`, `/api/command/stream`) and stays supported for compatibility.
+- gRPC is the planned service transport for BFF/gateway clients that need typed streaming and stricter contracts.
+- Unix socket remains for local, privileged control-plane integrations.
+
+In `apps/dashboard`, transport selection is handled in the SDK/source layer:
+
+- `sdk/hubrelay` now exposes a transport facade (`CommandTransport`) instead of wiring HTTP paths directly in app code.
+- `apps/dashboard/internal/relay` now selects the SDK client by transport config instead of hardcoding HTTP vs Unix constructor branches.
+- `apps/dashboard/internal/source` consumes the same methods (`Health`, `Capabilities`, `Ask`, `AskStream`, `Egress`, `Audit`) independent of transport.
+- Browser widgets should consume pointwise endpoints; no full-page websocket conversion is required for this direction.
+- Existing UI streaming can still be done via SSE while the backend transport for dashboard internals can switch to gRPC later.
+
+Runtime composition also moved one level up:
+
+- plugins are now collected through a registry/factory pattern in `cmd/bot`,
+- the immutable runtime profile still describes capabilities, but a generic `Config` map is now part of the profile snapshot used by contracts and clients,
+- this keeps future consumers from depending on hardcoded adapter/provider struct fields.
+
+Decision matrix:
+
+- Choose HTTP when compatibility, simplicity, or external tooling parity is the priority.
+- Choose gRPC when strict contracts, typed payloads, and server-stream usage for dashboard micro-flows are required.
 
 ## Outbound Rule
 - workload outbound policy must live above individual plugins,

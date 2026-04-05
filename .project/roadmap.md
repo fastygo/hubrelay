@@ -13,6 +13,16 @@ It must stay useful across network restrictions, survive container recreation, a
 - Operator access can happen through multiple transport adapters, but every adapter maps into the same core command model.
 - Workload outbound traffic must go through a shared policy layer rather than plugin-local transport rules.
 
+## Transport roadmap
+
+- Baseline transport remains HTTP JSON (`/api/command`, `/api/command/stream`) and must remain backward compatible.
+- Secondary transport target is gRPC for SDK + BFF/gateway traffic needing typed contracts and native streaming.
+- Unix socket transport stays for local control-plane integrations.
+- Dashboard migration strategy:
+  - keep page rendering as server-rendered pages;
+  - keep browser stream UX as SSE in current widgets;
+  - move widget and metric retrieval to SDK-backed transport abstraction first (HTTP or gRPC by config).
+
 ## Current monorepo layout after refactor
 
 - `sshbot` root module: core daemon and runtime contracts.

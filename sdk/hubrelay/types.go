@@ -34,20 +34,21 @@ type HealthResponse struct {
 }
 
 type CapabilitiesResponse struct {
-	ProfileID    string   `json:"profile_id"`
-	DisplayName  string   `json:"display_name"`
-	Capabilities []string `json:"capabilities"`
-	HTTPBind     string   `json:"http_bind,omitempty"`
-	EmailEnabled bool     `json:"email_enabled,omitempty"`
-	AIEnabled    bool     `json:"ai_enabled,omitempty"`
-	AIProvider   string   `json:"ai_provider,omitempty"`
-	AIBaseURL    string   `json:"ai_base_url,omitempty"`
-	AIModel      string   `json:"ai_model,omitempty"`
-	AIAPIMode    string   `json:"ai_api_mode,omitempty"`
-	ChatHistory  bool     `json:"chat_history,omitempty"`
-	AIHasAPIKey  bool     `json:"ai_has_api_key,omitempty"`
-	ProxySession bool     `json:"proxy_session,omitempty"`
-	ProxyForce   bool     `json:"proxy_force,omitempty"`
+	ProfileID    string            `json:"profile_id"`
+	DisplayName  string            `json:"display_name"`
+	Capabilities []string          `json:"capabilities"`
+	Config       map[string]string `json:"config,omitempty"`
+	HTTPBind     string            `json:"http_bind,omitempty"`
+	EmailEnabled bool              `json:"email_enabled,omitempty"`
+	AIEnabled    bool              `json:"ai_enabled,omitempty"`
+	AIProvider   string            `json:"ai_provider,omitempty"`
+	AIBaseURL    string            `json:"ai_base_url,omitempty"`
+	AIModel      string            `json:"ai_model,omitempty"`
+	AIAPIMode    string            `json:"ai_api_mode,omitempty"`
+	ChatHistory  bool              `json:"chat_history,omitempty"`
+	AIHasAPIKey  bool              `json:"ai_has_api_key,omitempty"`
+	ProxySession bool              `json:"proxy_session,omitempty"`
+	ProxyForce   bool              `json:"proxy_force,omitempty"`
 }
 
 type StreamChunk struct {

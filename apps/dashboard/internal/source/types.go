@@ -46,20 +46,21 @@ type AdapterHealth struct {
 }
 
 type CapabilitiesData struct {
-	ProfileID    string   `json:"profileID"`
-	DisplayName  string   `json:"displayName"`
-	Capabilities []string `json:"capabilities"`
-	HTTPBind     string   `json:"httpBind"`
-	EmailEnabled bool     `json:"emailEnabled"`
-	AIEnabled    bool     `json:"aiEnabled"`
-	AIProvider   string   `json:"aiProvider"`
-	AIBaseURL    string   `json:"aiBaseURL"`
-	AIModel      string   `json:"aiModel"`
-	AIAPIMode    string   `json:"aiApiMode"`
-	ChatHistory  bool     `json:"chatHistory"`
-	AIHasAPIKey  bool     `json:"aiHasApiKey"`
-	ProxySession bool     `json:"proxySession"`
-	ProxyForce   bool     `json:"proxyForce"`
+	ProfileID    string            `json:"profileID"`
+	DisplayName  string            `json:"displayName"`
+	Capabilities []string          `json:"capabilities"`
+	Config       map[string]string `json:"config,omitempty"`
+	HTTPBind     string            `json:"httpBind"`
+	EmailEnabled bool              `json:"emailEnabled"`
+	AIEnabled    bool              `json:"aiEnabled"`
+	AIProvider   string            `json:"aiProvider"`
+	AIBaseURL    string            `json:"aiBaseURL"`
+	AIModel      string            `json:"aiModel"`
+	AIAPIMode    string            `json:"aiApiMode"`
+	ChatHistory  bool              `json:"chatHistory"`
+	AIHasAPIKey  bool              `json:"aiHasApiKey"`
+	ProxySession bool              `json:"proxySession"`
+	ProxyForce   bool              `json:"proxyForce"`
 }
 
 type StreamChunk struct {

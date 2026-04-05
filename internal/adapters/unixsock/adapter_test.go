@@ -16,7 +16,7 @@ import (
 
 type testStore struct{}
 
-func (testStore) EnsureSchema(buildprofile.Profile) error        { return nil }
+func (testStore) EnsureSchema(core.RuntimeProfile) error         { return nil }
 func (testStore) UpsertPrincipal(core.Principal) error           { return nil }
 func (testStore) SaveSession(core.SessionState) error            { return nil }
 func (testStore) RecordAudit(core.AuditEntry) error              { return nil }

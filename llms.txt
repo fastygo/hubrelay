@@ -22,6 +22,7 @@ Closed/private directories are explicitly excluded:
 HubRelay is a monorepo for a command-control runtime and an operator dashboard:
 
 - `sshbot` (repo root): core command daemon (`cmd/bot`) with plugins and outbound policy.
+- `pkg/contract`: shared transport-neutral command, stream, plugin, and store contracts.
 - `sdk/hubrelay`: typed Go client (`CommandRequest`, `Execute`, `ExecuteStream`).
 - `hubcore`: shared dashboard library (`auth`, `locale`, `shell`) imported at build time.
 - `apps/dashboard`: dashboard service (`apps/dashboard/cmd/server`).
@@ -56,6 +57,7 @@ HubRelay is a monorepo for a command-control runtime and an operator dashboard:
 - `.project/adr/0001-immutable-deploy-profile.md`
 - `.project/adr/0002-secrets-outside-runtime-state.md`
 - `.project/adr/0003-bbolt-as-runtime-state.md`
+- `.project/adr/0004-grpc-sdk-streaming-for-widget-transport.md`
 - `.roadmap/sdk-relay-hub.md`
 - `.roadmap/checklist.md`
 
@@ -114,6 +116,7 @@ go test ./apps/dashboard/ui8kit/...
 
 ```bash
 go build ./cmd/bot
+go build ./...
 go build ./apps/dashboard/cmd/server
 ```
 
@@ -136,6 +139,12 @@ curl -s -X POST http://127.0.0.1:5500/api/command \
   -H "Content-Type: application/json" \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
 ```
+
+### Contract and SDK notes
+
+- `pkg/contract` is the shared source of truth for `CommandEnvelope`, `CommandResult`, `StreamChunk`, plugin contracts, and runtime profile snapshots.
+- `sdk/hubrelay` now hides transport choice behind a client facade so HTTP, Unix socket, and future gRPC transports can share one consumer API.
+- `apps/dashboard/internal/source` remains the stable app-facing interface even while transport implementations change under it.
 
 ### Dashboard runtime
 
@@ -192,6 +201,6 @@ Do not expose private playbooks by default:
   ],
   "exclude": [".manual", ".paas"],
   "attribution": "HubRelay contributors",
-  "last_updated": "2026-04-04"
+  "last_updated": "2026-04-05"
 }
 ```
