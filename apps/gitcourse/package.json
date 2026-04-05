@@ -1,0 +1,14 @@
+{
+  "name": "gitcourse",
+  "private": true,
+  "scripts": {
+    "dev:css": "tailwindcss -i ./static/css/input.css -o ./static/css/app.css --watch",
+    "build:css": "tailwindcss -i ./static/css/input.css -o ./static/css/app.css --minify",
+    "sync:ui8kit": "bash ./scripts/sync-ui8kit-css.sh",
+    "ui8kit:build": "npm run sync:ui8kit && npm run build:css"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.1",
+    "tailwindcss": "^4.2.1"
+  }
+}

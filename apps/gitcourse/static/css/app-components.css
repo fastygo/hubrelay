@@ -1,0 +1,177 @@
+@layer components {
+  .app-page {
+    @apply space-y-6;
+  }
+
+  .app-page-header {
+    @apply space-y-2;
+  }
+
+  .app-subtle {
+    @apply text-muted-foreground;
+  }
+
+  .app-alert-error {
+    @apply rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive;
+  }
+
+  .app-alert-success {
+    @apply rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-700 dark:text-emerald-300;
+  }
+
+  .app-login-page {
+    @apply flex min-h-screen flex-col bg-background p-4 md:p-6;
+  }
+
+  .app-login-actions {
+    @apply flex justify-end gap-2;
+  }
+
+  .app-header-logout-form {
+    @apply inline-flex;
+  }
+
+  .app-header-logout-btn {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .app-login-body {
+    @apply flex flex-1 items-center justify-center;
+  }
+
+  .app-login-panel {
+    @apply w-full max-w-md;
+  }
+
+  .app-login-card {
+    @apply space-y-6;
+  }
+
+  .app-login-header {
+    @apply space-y-2;
+  }
+
+  .app-login-brand {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+
+  .app-login-submit {
+    @apply w-full;
+  }
+
+  .app-two-col {
+    @apply grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)];
+  }
+
+  .app-form {
+    @apply space-y-4;
+  }
+
+  .app-actions {
+    @apply flex flex-wrap gap-3;
+  }
+
+  .app-button-outline {
+    @apply inline-flex h-9 items-center justify-center rounded border border-border px-4 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .app-language-toggle-current {
+    @apply text-[10px] font-semibold leading-none;
+  }
+
+  .app-stream-head {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .app-stream-status {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .app-stream-output {
+    @apply mt-4 min-h-64 overflow-x-auto whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm;
+  }
+
+  .app-stream-result {
+    @apply mt-4 hidden rounded-lg border border-border bg-background p-4 text-sm;
+  }
+
+  .app-course-grid {
+    @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .app-course-card {
+    @apply flex h-full flex-col gap-4;
+  }
+
+  .app-course-meta {
+    @apply flex flex-wrap gap-2 text-xs text-muted-foreground;
+  }
+
+  .app-course-tags {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .app-pill {
+    @apply inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground;
+  }
+
+  .app-course-actions {
+    @apply mt-auto flex flex-wrap gap-3;
+  }
+
+  .app-progress-stack {
+    @apply space-y-3;
+  }
+
+  .app-progress-bar {
+    @apply h-2 overflow-hidden rounded-full bg-muted;
+  }
+
+  .app-progress-bar-fill {
+    @apply h-full rounded-full bg-primary transition-all;
+  }
+
+  .app-section {
+    @apply space-y-4;
+  }
+
+  .app-section-list {
+    @apply space-y-3;
+  }
+
+  .app-lesson-row {
+    @apply flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-4;
+  }
+
+  .app-lesson-main {
+    @apply space-y-2;
+  }
+
+  .app-lesson-status {
+    @apply text-xs font-medium text-muted-foreground;
+  }
+
+  .app-checklist {
+    @apply space-y-3;
+  }
+
+  .app-check-item {
+    @apply flex items-start gap-3 rounded-lg border border-border bg-card p-3;
+  }
+
+  .app-check-icon {
+    @apply mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold;
+  }
+
+  .app-check-icon-done {
+    @apply bg-emerald-500/15 text-emerald-600 dark:text-emerald-300;
+  }
+
+  .app-check-icon-pending {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .app-hints {
+    @apply space-y-2 rounded-lg border border-dashed border-border p-4;
+  }
+}

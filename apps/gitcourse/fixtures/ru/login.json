@@ -1,0 +1,9 @@
+{
+  "title": "Вход оператора",
+  "description": "Войдите, чтобы управлять публичными Git-курсами и сессиями ASK AI.",
+  "username_label": "Логин",
+  "password_label": "Пароль",
+  "submit_label": "Войти",
+  "invalid_form_error": "Заполните логин и пароль.",
+  "invalid_creds_error": "Неверный логин или пароль."
+}

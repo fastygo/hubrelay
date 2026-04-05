@@ -1,0 +1,29 @@
+{
+  "result": {
+    "status": "ok",
+    "message": "Используйте course.json как основной контракт, keep verify rules deterministic и обновляйте progress.json из CI.",
+    "data": {
+      "mode": "fixture"
+    }
+  },
+  "stream": {
+    "chunks": [
+      {
+        "delta": "Начните с простого контракта курса. "
+      },
+      {
+        "delta": "Держите проверки детерминированными и CI-driven. "
+      },
+      {
+        "delta": "Считайте progress.json публичным состоянием ученика."
+      }
+    ],
+    "result": {
+      "status": "ok",
+      "message": "Fixture stream complete.",
+      "data": {
+        "mode": "fixture"
+      }
+    }
+  }
+}

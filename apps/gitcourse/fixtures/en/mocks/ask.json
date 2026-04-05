@@ -1,0 +1,29 @@
+{
+  "result": {
+    "status": "ok",
+    "message": "Use course.json as the canonical contract, keep verify rules deterministic, and let CI update progress.json.",
+    "data": {
+      "mode": "fixture"
+    }
+  },
+  "stream": {
+    "chunks": [
+      {
+        "delta": "Start with a simple course contract. "
+      },
+      {
+        "delta": "Keep verification deterministic and CI-driven. "
+      },
+      {
+        "delta": "Treat progress.json as the student's public state."
+      }
+    ],
+    "result": {
+      "status": "ok",
+      "message": "Fixture stream complete.",
+      "data": {
+        "mode": "fixture"
+      }
+    }
+  }
+}

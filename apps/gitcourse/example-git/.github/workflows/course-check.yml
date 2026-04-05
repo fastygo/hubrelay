@@ -1,0 +1,38 @@
+name: course-check
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Verify course progress
+        run: bash .course/ci/verify.sh > .course/progress.json
+
+      - name: Commit progress
+        run: |
+          if git diff --quiet .course/progress.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .course/progress.json
+          git commit -m "Update course progress"
+          git push

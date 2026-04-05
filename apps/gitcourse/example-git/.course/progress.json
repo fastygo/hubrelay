@@ -1,0 +1,12 @@
+{
+  "course_id": "vite-react-starter",
+  "lessons": [
+    { "id": "001", "status": "pending", "checks": {}, "messages": {} },
+    { "id": "002", "status": "pending", "checks": {}, "messages": {} },
+    { "id": "003", "status": "pending", "checks": {}, "messages": {} },
+    { "id": "004", "status": "pending", "checks": {}, "messages": {} },
+    { "id": "005", "status": "pending", "checks": {}, "messages": {} },
+    { "id": "006", "status": "pending", "checks": {}, "messages": {} },
+    { "id": "007", "status": "pending", "checks": {}, "messages": {} }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "brand_name": "GitCourse",
+  "default_title": "GitCourse",
+  "nav": {
+    "courses": "Курсы",
+    "ask": "ASK AI"
+  },
+  "locale_labels": {
+    "en": "EN",
+    "ru": "RU"
+  },
+  "actions": {
+    "logout": "Выйти"
+  },
+  "theme": {
+    "label": "Переключить тему",
+    "switch_to_dark_label": "Включить темную тему",
+    "switch_to_light_label": "Включить светлую тему"
+  }
+}

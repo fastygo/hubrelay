@@ -1,0 +1,11 @@
+{
+  "courses": [
+    {
+      "id": "vite-react-starter",
+      "repo_url": "https://github.com/example/example-git",
+      "title": "Vite + React Starter",
+      "language": "typescript",
+      "description": "Build a small storefront app, lesson by lesson."
+    }
+  ]
+}

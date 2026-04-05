@@ -1,0 +1,23 @@
+{
+  "title": "Ask AI",
+  "description": "Send a question directly or provide course context for a better answer.",
+  "prompt_label": "Prompt",
+  "prompt_placeholder": "How should I structure lesson verification for a Git course?",
+  "model_label": "Model override",
+  "model_placeholder": "Optional model name",
+  "context_label": "Course context",
+  "context_placeholder": "Optional course or lesson context",
+  "stream_submit_label": "Stream answer",
+  "sync_submit_label": "Sync answer",
+  "prompt_required_error": "A prompt is required.",
+  "stream_title": "Stream output",
+  "status_idle": "idle",
+  "status_sync": "sync",
+  "status_prompt_required": "prompt required",
+  "status_connecting": "connecting",
+  "status_streaming": "streaming",
+  "status_done": "done",
+  "status_error": "error",
+  "default_error": "The AI stream failed.",
+  "result_title": "Result"
+}

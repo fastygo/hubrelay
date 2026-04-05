@@ -1,0 +1,9 @@
+{
+  "title": "Operator login",
+  "description": "Sign in to manage public Git-based courses and ASK AI sessions.",
+  "username_label": "Username",
+  "password_label": "Password",
+  "submit_label": "Sign in",
+  "invalid_form_error": "Fill in both username and password.",
+  "invalid_creds_error": "The username or password is invalid."
+}

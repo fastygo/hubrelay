@@ -26,6 +26,7 @@ HubRelay is a monorepo for a command-control runtime and an operator dashboard:
 - `sdk/hubrelay`: typed Go client (`CommandRequest`, `Execute`, `ExecuteStream`).
 - `hubcore`: shared dashboard library (`auth`, `locale`, `shell`) imported at build time.
 - `apps/dashboard`: dashboard service (`apps/dashboard/cmd/server`).
+- `apps/gitcourse`: public Git-based course cabinet (`apps/gitcourse/cmd/server`) built from the same SSR/BFF pattern.
 - `apps/dashboard/ui8kit`: reusable UI toolkit and style system.
 
 `hubcore` is a Go library, not a runtime process.
@@ -80,6 +81,7 @@ HubRelay is a monorepo for a command-control runtime and an operator dashboard:
 
 - `apps/dashboard/README.md`
 - `apps/dashboard/docs/fixtures-and-runtime.md`
+- `apps/gitcourse/ROADMAP.md`
 - `apps/dashboard/ui8kit/README.md`
 - `apps/dashboard/ui8kit/docs/README.md`
 - `apps/dashboard/ui8kit/docs/design-principles.md`
@@ -109,6 +111,7 @@ go test ./...
 go test ./hubcore/...
 go test ./sdk/hubrelay/...
 go test ./apps/dashboard/...
+go test ./apps/gitcourse/...
 go test ./apps/dashboard/ui8kit/...
 ```
 
@@ -118,12 +121,24 @@ go test ./apps/dashboard/ui8kit/...
 go build ./cmd/bot
 go build ./...
 go build ./apps/dashboard/cmd/server
+go build ./apps/gitcourse/cmd/server
 ```
 
 ### Dashboard asset bootstrap
 
 ```bash
 cd apps/dashboard
+go mod tidy
+npm install
+npm run sync:ui8kit
+npm run build:css
+templ generate ./...
+```
+
+### GitCourse asset bootstrap
+
+```bash
+cd apps/gitcourse
 go mod tidy
 npm install
 npm run sync:ui8kit
@@ -153,6 +168,7 @@ go run ./cmd/grpc-system-info --target 127.0.0.1:5501
 ```bash
 APP_DATA_SOURCE=live go run ./apps/dashboard/cmd/server
 APP_DATA_SOURCE=fixture APP_AUTH_DISABLED=true go run ./apps/dashboard/cmd/server
+APP_DATA_SOURCE=fixture APP_AUTH_DISABLED=true go run ./apps/gitcourse/cmd/server
 ```
 
 ### Egress-aware startup example

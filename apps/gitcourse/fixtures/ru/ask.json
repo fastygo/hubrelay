@@ -1,0 +1,23 @@
+{
+  "title": "ASK AI",
+  "description": "Задайте вопрос напрямую или добавьте контекст курса для более точного ответа.",
+  "prompt_label": "Запрос",
+  "prompt_placeholder": "Как лучше организовать verify.sh для Git-курса?",
+  "model_label": "Модель",
+  "model_placeholder": "Необязательное имя модели",
+  "context_label": "Контекст курса",
+  "context_placeholder": "Необязательный контекст курса или урока",
+  "stream_submit_label": "Стримить ответ",
+  "sync_submit_label": "Синхронный ответ",
+  "prompt_required_error": "Нужно указать запрос.",
+  "stream_title": "Поток ответа",
+  "status_idle": "ожидание",
+  "status_sync": "синхронный режим",
+  "status_prompt_required": "нужен запрос",
+  "status_connecting": "подключение",
+  "status_streaming": "стриминг",
+  "status_done": "готово",
+  "status_error": "ошибка",
+  "default_error": "Поток ASK AI завершился с ошибкой.",
+  "result_title": "Результат"
+}

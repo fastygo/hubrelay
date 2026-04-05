@@ -1,0 +1,25 @@
+package views
+
+import "github.com/fastygo/ui8kit/ui"
+
+templ AddCourseForm(data AddCourseFormData) {
+	<div class="space-y-4">
+		<div class="app-page-header">
+			@ui.Title(ui.TitleProps{Order: 3}, data.Title)
+			@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Description)
+		</div>
+		<form method="post" action={ data.Action } class="app-form">
+			<div class="space-y-2">
+				<label for="repo-url" class="form-label">{ data.RepoURLLabel }</label>
+				@ui.Field(ui.FieldProps{
+					ID:          "repo-url",
+					Name:        "repo_url",
+					Value:       data.RepoURLValue,
+					Placeholder: data.RepoURLHint,
+					Required:    true,
+				})
+			</div>
+			@ui.Button(ui.ButtonProps{Type: "submit"}, data.SubmitLabel)
+		</form>
+	</div>
+}

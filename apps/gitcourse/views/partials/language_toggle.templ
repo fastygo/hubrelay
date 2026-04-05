@@ -1,0 +1,19 @@
+package partials
+
+templ LanguageToggle(data LanguageToggleData) {
+	if data.Enabled {
+		<button
+			type="button"
+			id="app-language-toggle"
+			class="kit-header-action-btn"
+			data-current-locale={ data.CurrentLocale }
+			data-available-locales={ data.AvailableLocales }
+			data-default-locale={ data.DefaultLocale }
+			data-next-locale={ data.NextLocale }
+			title={ data.Title }
+			aria-label={ data.Title }
+		>
+			<span id="app-language-toggle-label" class="app-language-toggle-current">{ data.CurrentLabel }</span>
+		</button>
+	}
+}

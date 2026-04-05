@@ -1,0 +1,78 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+	"gitcourse/views/partials"
+)
+
+templ LoginPage(data LoginPageData) {
+	<!doctype html>
+	<html lang={ data.Layout.Locale }>
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ data.Layout.Title }</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="/static/js/app-shell.js" defer></script>
+		</head>
+		<body class="kit-shell-body">
+			<div class="app-login-page">
+				<div class="app-login-actions">
+					@partials.LanguageToggle(data.Layout.LanguageToggle)
+					<button
+						type="button"
+						id="ui8kit-theme-toggle"
+						class="kit-header-theme-btn"
+						data-switch-to-dark-label={ data.Layout.ThemeToggle.SwitchToDarkLabel }
+						data-switch-to-light-label={ data.Layout.ThemeToggle.SwitchToLightLabel }
+						title={ data.Layout.ThemeToggle.Label }
+						aria-label={ data.Layout.ThemeToggle.Label }
+						aria-pressed="false"
+					>
+						<span id="theme-toggle-icon" class="latty latty-moon h-4 w-4"></span>
+					</button>
+				</div>
+				<div class="app-login-body">
+					<div class="app-login-panel">
+						<div class={ utils.Cn(utils.CardVariant("default"), "app-login-card") }>
+							<div class="app-login-header">
+								<div class="app-login-brand">{ data.Layout.BrandName }</div>
+								@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+								@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
+							</div>
+							if data.Error != "" {
+								<div class="app-alert-error" role="alert">
+									{ data.Error }
+								</div>
+							}
+							<form method="post" action={ data.FormAction } class="app-form">
+								<div class="space-y-2">
+									<label for="login-username" class="form-label">{ data.UsernameLabel }</label>
+									@ui.Field(ui.FieldProps{
+										ID:           "login-username",
+										Name:         "username",
+										Value:        data.UsernameValue,
+										Required:     true,
+										Autocomplete: "username",
+									})
+								</div>
+								<div class="space-y-2">
+									<label for="login-password" class="form-label">{ data.PasswordLabel }</label>
+									@ui.Field(ui.FieldProps{
+										ID:           "login-password",
+										Name:         "password",
+										Type:         "password",
+										Required:     true,
+										Autocomplete: "current-password",
+									})
+								</div>
+								@ui.Button(ui.ButtonProps{Type: "submit", Class: "app-login-submit"}, data.SubmitLabel)
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</body>
+	</html>
+}

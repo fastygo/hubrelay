@@ -1,0 +1,21 @@
+{
+  "title": "Каталог курсов",
+  "description": "Подключайте публичные репозитории, отслеживайте прогресс и открывайте уроки прямо в кабинете GitCourse.",
+  "add_course_title": "Добавить публичный курс",
+  "add_course_description": "Вставьте URL репозитория. GitCourse проверит контракт курса и сохранит снимок метаданных.",
+  "repo_url_label": "URL репозитория",
+  "repo_url_placeholder": "https://github.com/owner/example-git",
+  "add_course_submit": "Добавить курс",
+  "open_course": "Открыть курс",
+  "remove_course": "Удалить",
+  "enroll_label": "URL репозитория ученика",
+  "enroll_placeholder": "https://github.com/owner/example-git-student",
+  "enroll_submit": "Сохранить репозиторий",
+  "progress_title": "Прогресс",
+  "lessons_title": "Уроки",
+  "hints_title": "Подсказки",
+  "ask_lesson": "Спросить AI про этот урок",
+  "no_courses": "Пока не добавлено ни одного курса.",
+  "add_course_success": "Курс сохранён.",
+  "progress_unavailable": "Прогресс пока недоступен."
+}

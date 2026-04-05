@@ -1,0 +1,58 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+)
+
+templ CatalogPage(data CatalogPageData) {
+	@Layout(data.Layout, nil) {
+		<div class="app-page">
+			<div class="app-page-header">
+				@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
+			</div>
+
+			if data.Error != "" {
+				<div class="app-alert-error" role="alert">
+					{ data.Error }
+				</div>
+			}
+			if data.Success != "" {
+				<div class="app-alert-success" role="status">
+					{ data.Success }
+				</div>
+			}
+
+			<div class="app-two-col">
+				<div class={ utils.CardVariant("default") }>
+					@AddCourseForm(data.Form)
+				</div>
+
+				<div class="app-course-grid">
+					if len(data.Courses) == 0 {
+						<div class={ utils.CardVariant("default") }>
+							@ui.Text(ui.TextProps{}, data.Empty)
+						</div>
+					}
+					for _, course := range data.Courses {
+						<div class={ utils.Cn(utils.CardVariant("default"), "app-course-card") }>
+							<div class="space-y-3">
+								@ui.Title(ui.TitleProps{Order: 3}, course.Title)
+								@ui.Text(ui.TextProps{Class: "app-subtle"}, course.Description)
+								<div class="app-course-meta">
+									<span class="app-pill">{ course.Language }</span>
+									<span class="app-pill">{ course.ProgressLabel }</span>
+								</div>
+								@ui.Text(ui.TextProps{Class: "app-subtle"}, course.ProgressLabel)
+							</div>
+							<div class="app-course-actions">
+								<a href={ "/course/" + course.ID } class="app-button-outline">Open</a>
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+}

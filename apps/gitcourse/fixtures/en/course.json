@@ -1,0 +1,21 @@
+{
+  "title": "Course catalog",
+  "description": "Attach public repositories, monitor progress, and open lessons directly from the GitCourse cabinet.",
+  "add_course_title": "Add public course",
+  "add_course_description": "Paste the repository URL. GitCourse will validate the course contract and save the snapshot metadata.",
+  "repo_url_label": "Repository URL",
+  "repo_url_placeholder": "https://github.com/owner/example-git",
+  "add_course_submit": "Add course",
+  "open_course": "Open course",
+  "remove_course": "Remove",
+  "enroll_label": "Student repository URL",
+  "enroll_placeholder": "https://github.com/owner/example-git-student",
+  "enroll_submit": "Save repository",
+  "progress_title": "Progress",
+  "lessons_title": "Lessons",
+  "hints_title": "Hints",
+  "ask_lesson": "Ask AI about this lesson",
+  "no_courses": "No courses have been added yet.",
+  "add_course_success": "Course saved.",
+  "progress_unavailable": "Progress is not available yet."
+}

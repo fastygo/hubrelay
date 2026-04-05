@@ -135,6 +135,15 @@ example-vite/
 *   `course` — витрина курсов + кабинет ученика + прогресс
 *   `ask` — ASK AI через HubRelay SDK
 
+### Реализация MVP
+
+*   `internal/store` — `CourseStore` c JSON-backed реестром (`data/courses.json`) для публичных курсов, snapshot hash и привязок student repo
+*   `internal/git` — raw HTTP reader для `course.json`, `progress.json`, `verify.sh` и CI workflow
+*   `internal/progress` — `sync.Map` + TTL cache для публичного `progress.json`
+*   `internal/source` — fixture/live слой: fixture для разработки без HubRelay, live для real Git + SDK
+*   `views/catalog.templ`, `views/course.templ`, `views/lesson.templ`, `views/ask.templ` — SSR страницы GitCourse
+*   `example-git/` — publishable шаблон первого курса, который потом выносится в отдельный публичный репозиторий
+
 ### Source interface
 
 ```go
@@ -152,7 +161,10 @@ Fixture-реализация для офлайн-разработки. Live-ре
 
 *   `APP_BIND`, `APP_ADMIN_USER`, `APP_ADMIN_PASS`, `APP_AUTH_DISABLED`
 *   `APP_DATA_SOURCE=fixture|live`
+*   `APP_DATA_DIR` — путь для `courses.json`
+*   `APP_WEBHOOK_TOKEN` — shared secret для webhook прогресса
 *   `HUBRELAY_TRANSPORT`, `HUBRELAY_BASE_URL` — подключение к HubRelay
+*   `QDRANT_URL` — опциональная векторная БД для RAG
 
 ### Маршруты
 
@@ -186,6 +198,7 @@ Fixture-реализация для офлайн-разработки. Live-ре
 *   Отображение прогресса из публичного репозитория
 *   ASK AI через HubRelay в fixture и live режиме
 *   Темы light/dark, локализация en/ru
+*   Deployment path через `.paas/extensions/deploy-gitcourse.yml` и `.paas/deploy-gitcourse-clean.sh`
 
 * * *
 
@@ -259,3 +272,11 @@ Fixture-реализация для офлайн-разработки. Live-ре
 *   Приватные репозитории и платные курсы
 *   Абстракция Git-провайдера (GitLab, Gitea)
 *   Масштабирование инфраструктуры
+
+## После публикации example-git
+
+После выноса `apps/gitcourse/example-git/` в отдельный публичный репозиторий:
+
+*   удалить `apps/gitcourse/example-git/` из монорепозитория
+*   удалить `apps/gitcourse/example-vite/`, так как он нужен только как ранний локальный стартовый шаблон
+*   оставить в репозитории только GitCourse app, дорожную карту и ссылки на внешний template repo

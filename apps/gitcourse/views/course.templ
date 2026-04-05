@@ -1,0 +1,71 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+)
+
+templ CoursePage(data CoursePageData) {
+	@Layout(data.Layout, nil) {
+		<div class="app-page">
+			<div class="app-page-header">
+				@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
+			</div>
+
+			if data.Error != "" {
+				<div class="app-alert-error" role="alert">
+					{ data.Error }
+				</div>
+			}
+
+			<div class="app-two-col">
+				<div class={ utils.CardVariant("default") }>
+					<div class="app-progress-stack">
+						<div class="app-course-meta">
+							<span class="app-pill">{ data.ProgressLabel }</span>
+						</div>
+						<form method="post" action={ data.EnrollAction } class="app-form">
+							<div class="space-y-2">
+								<label for="student-repo" class="form-label">{ data.EnrollLabel }</label>
+								@ui.Field(ui.FieldProps{
+									ID:          "student-repo",
+									Name:        "student_repo",
+									Value:       data.EnrollValue,
+									Placeholder: data.EnrollHint,
+								})
+							</div>
+							@ui.Button(ui.ButtonProps{Type: "submit"}, data.EnrollSubmit)
+						</form>
+						<form method="post" action={ data.RemoveAction }>
+							<button type="submit" class="app-button-outline">{ data.RemoveLabel }</button>
+						</form>
+					</div>
+				</div>
+
+				<div class="space-y-6">
+					<div class={ utils.CardVariant("default") }>
+						@ui.Title(ui.TitleProps{Order: 3}, data.SectionsTitle)
+						<div class="app-section-list mt-4">
+							for _, section := range data.Sections {
+								<div class="app-section">
+									@ui.Title(ui.TitleProps{Order: 4}, section.Title)
+									for _, lesson := range section.Lessons {
+										<div class="app-lesson-row">
+											<div class="app-lesson-main">
+												<div class="app-lesson-status">{ lesson.StatusLabel }</div>
+												@ui.Title(ui.TitleProps{Order: 5}, lesson.Title)
+												@ui.Text(ui.TextProps{Class: "app-subtle"}, lesson.Objective)
+											</div>
+											<a href={ lesson.Path } class="app-button-outline">Open</a>
+										</div>
+									}
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

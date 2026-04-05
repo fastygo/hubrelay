@@ -1,0 +1,64 @@
+package views
+
+import (
+	"github.com/fastygo/ui8kit/ui"
+	"github.com/fastygo/ui8kit/utils"
+)
+
+templ LessonPage(data LessonPageData) {
+	@Layout(data.Layout, nil) {
+		<div class="app-page">
+			<div class="app-page-header">
+				@ui.Title(ui.TitleProps{Order: 1}, data.Header.Title)
+				@ui.Text(ui.TextProps{Class: "app-subtle"}, data.Header.Description)
+				<div class="app-course-meta">
+					<a href={ data.CoursePath } class="app-button-outline">{ data.CourseTitle }</a>
+					<span class="app-pill">{ data.ProgressLabel }</span>
+				</div>
+			</div>
+
+			if data.Error != "" {
+				<div class="app-alert-error" role="alert">
+					{ data.Error }
+				</div>
+			}
+
+			<div class="app-two-col">
+				<div class={ utils.CardVariant("default") }>
+					<div class="app-checklist">
+						for _, check := range data.Checks {
+							<div class="app-check-item">
+								if check.Done {
+									<div class={ utils.Cn("app-check-icon", "app-check-icon-done") }>✓</div>
+								} else {
+									<div class={ utils.Cn("app-check-icon", "app-check-icon-pending") }>•</div>
+								}
+								<div class="space-y-1">
+									@ui.Text(ui.TextProps{}, check.Label)
+									@ui.Text(ui.TextProps{Class: "app-subtle"}, check.Verify)
+									if check.Message != "" {
+										@ui.Text(ui.TextProps{Class: "app-subtle"}, check.Message)
+									}
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+
+				<div class="space-y-6">
+					<div class={ utils.CardVariant("default") }>
+						<div class="app-hints">
+							@ui.Title(ui.TitleProps{Order: 3}, data.HintsTitle)
+							for _, hint := range data.Hints {
+								@ui.Text(ui.TextProps{Class: "app-subtle"}, hint)
+							}
+						</div>
+					</div>
+					<div class={ utils.CardVariant("default") }>
+						<a href={ data.AskPath } class="app-button-outline">{ data.AskLabel }</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

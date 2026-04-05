@@ -1,0 +1,16 @@
+---
+description: GitCourse lesson guidance
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+Read `.course/course.json` for the active lesson contract.
+
+Read `.course/progress.json` for the current lesson status before changing code.
+
+When helping with the course:
+- prefer small, verifiable steps
+- keep code comments in English
+- do not rewrite the whole project when a lesson asks for one focused change
+- explain how the change helps pass the lesson checklist

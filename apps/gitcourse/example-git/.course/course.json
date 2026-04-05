@@ -1,0 +1,157 @@
+{
+  "id": "vite-react-starter",
+  "version": "1.0.0",
+  "title": "Vite + React: first application",
+  "description": "Build a small storefront-style app in incremental GitCourse lessons.",
+  "language": "typescript",
+  "sections": [
+    {
+      "id": "setup",
+      "title": "Project setup",
+      "description": "Validate the starter toolchain and basic app structure.",
+      "lessons": [
+        {
+          "id": "001",
+          "title": "Clone and run",
+          "objective": "Install dependencies and boot the app locally.",
+          "ask_context": "The student is preparing the Vite + React repository and validating the local toolchain.",
+          "hints": [
+            "Run npm install first.",
+            "Use npm run build to validate CI readiness."
+          ],
+          "checklist": [
+            {
+              "id": "node_modules",
+              "label": "Dependencies are installed",
+              "verify": "dir_exists:node_modules"
+            },
+            {
+              "id": "build_ok",
+              "label": "The production build passes",
+              "verify": "build_succeeds:npm run build"
+            }
+          ]
+        },
+        {
+          "id": "002",
+          "title": "Create the header",
+          "objective": "Add a reusable Header component with navigation links.",
+          "ask_context": "The student is creating the first presentational React component.",
+          "hints": [
+            "Create src/components/Header.tsx.",
+            "Use semantic nav markup."
+          ],
+          "checklist": [
+            {
+              "id": "header_component",
+              "label": "Header component exists",
+              "verify": "file_exists:src/components/Header.tsx"
+            },
+            {
+              "id": "header_nav",
+              "label": "Header includes navigation markup",
+              "verify": "file_contains:src/components/Header.tsx:nav"
+            }
+          ]
+        },
+        {
+          "id": "003",
+          "title": "Add routing",
+          "objective": "Prepare Home, About, and Catalog pages with react-router.",
+          "ask_context": "The student is introducing client-side routing into the starter app.",
+          "hints": [
+            "Install react-router-dom when you are ready.",
+            "Keep pages simple at first."
+          ],
+          "checklist": [
+            {
+              "id": "router_dependency",
+              "label": "react-router-dom is referenced in package.json",
+              "verify": "file_contains:package.json:react-router-dom"
+            },
+            {
+              "id": "router_usage",
+              "label": "App.tsx uses routing components",
+              "verify": "file_contains:src/App.tsx:BrowserRouter"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "title": "Catalog experience",
+      "description": "Build a small catalog view with data and styles.",
+      "lessons": [
+        {
+          "id": "004",
+          "title": "Catalog page with mock data",
+          "objective": "Render a list of products or course cards from mock data.",
+          "ask_context": "The student is building the first list page and shaping mock data for rendering.",
+          "hints": [
+            "Keep the mock data local first.",
+            "Use map() to render cards."
+          ],
+          "checklist": [
+            {
+              "id": "catalog_data",
+              "label": "Catalog page contains mock data",
+              "verify": "file_contains:src/App.tsx:Catalog"
+            }
+          ]
+        },
+        {
+          "id": "005",
+          "title": "Fetch JSON data",
+          "objective": "Load data from a local JSON source or stub API.",
+          "ask_context": "The student is replacing inline mock data with a fetch-based data source.",
+          "hints": [
+            "Use useEffect for the first fetch.",
+            "Handle loading and error states."
+          ],
+          "checklist": [
+            {
+              "id": "fetch_usage",
+              "label": "The app uses fetch()",
+              "verify": "file_contains:src/App.tsx:fetch("
+            }
+          ]
+        },
+        {
+          "id": "006",
+          "title": "Tailwind styling",
+          "objective": "Apply responsive layout and dark mode friendly UI.",
+          "ask_context": "The student is improving the layout and visual hierarchy with Tailwind.",
+          "hints": [
+            "Use grid utilities for the catalog.",
+            "Keep spacing consistent."
+          ],
+          "checklist": [
+            {
+              "id": "tailwind_classes",
+              "label": "Tailwind utility classes were added to the app",
+              "verify": "file_contains:src/App.tsx:grid"
+            }
+          ]
+        },
+        {
+          "id": "007",
+          "title": "Production build",
+          "objective": "Prepare the app for release and preview the result.",
+          "ask_context": "The student is validating the final production build and preview flow.",
+          "hints": [
+            "The build should stay green after all previous changes.",
+            "Use npm run preview to inspect the final bundle."
+          ],
+          "checklist": [
+            {
+              "id": "final_build",
+              "label": "The final build passes",
+              "verify": "build_succeeds:npm run build"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
