@@ -25,6 +25,7 @@ type Config struct {
 	DataSource         string
 	Transport          string
 	HubRelayBaseURL    string
+	HubRelayGRPCTarget string
 	HubRelaySocketPath string
 }
 
@@ -46,6 +47,7 @@ func Load() (Config, error) {
 		DataSource:         strings.ToLower(coreconfig.DefaultString(os.Getenv("APP_DATA_SOURCE"), DataSourceLive)),
 		Transport:          strings.ToLower(coreconfig.DefaultString(os.Getenv("HUBRELAY_TRANSPORT"), TransportHTTP)),
 		HubRelayBaseURL:    coreconfig.DefaultString(os.Getenv("HUBRELAY_BASE_URL"), "http://127.0.0.1:5500"),
+		HubRelayGRPCTarget: coreconfig.DefaultString(os.Getenv("HUBRELAY_GRPC_TARGET"), "127.0.0.1:5501"),
 		HubRelaySocketPath: coreconfig.DefaultString(os.Getenv("HUBRELAY_SOCKET_PATH"), "/run/hubrelay/hubrelay.sock"),
 	}
 
@@ -63,8 +65,9 @@ func Load() (Config, error) {
 				return Config{}, fmt.Errorf("HUBRELAY_BASE_URL must not be empty for http transport")
 			}
 		case TransportGRPC:
-			// Reserved for the future gRPC transport.
-			// Keep config validation open so the transport slot is stable across refactors.
+			if strings.TrimSpace(cfg.HubRelayGRPCTarget) == "" {
+				return Config{}, fmt.Errorf("HUBRELAY_GRPC_TARGET must not be empty for grpc transport")
+			}
 		case TransportUnix:
 			if strings.TrimSpace(cfg.HubRelaySocketPath) == "" {
 				return Config{}, fmt.Errorf("HUBRELAY_SOCKET_PATH must not be empty for unix transport")

@@ -138,12 +138,14 @@ curl -s http://127.0.0.1:5500/healthz
 curl -s -X POST http://127.0.0.1:5500/api/command \
   -H "Content-Type: application/json" \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
+go run ./cmd/grpc-system-info --target 127.0.0.1:5501
 ```
 
 ### Contract and SDK notes
 
 - `pkg/contract` is the shared source of truth for `CommandEnvelope`, `CommandResult`, `StreamChunk`, plugin contracts, and runtime profile snapshots.
-- `sdk/hubrelay` now hides transport choice behind a client facade so HTTP, Unix socket, and future gRPC transports can share one consumer API.
+- `sdk/hubrelay` now hides transport choice behind a client facade so HTTP, Unix socket, and gRPC transports can share one consumer API.
+- The bot now exposes HTTP and optional gRPC adapters at the same time; browser streaming remains SSE while backend consumers can choose the transport in config.
 - `apps/dashboard/internal/source` remains the stable app-facing interface even while transport implementations change under it.
 
 ### Dashboard runtime

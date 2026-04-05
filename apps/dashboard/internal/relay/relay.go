@@ -36,6 +36,7 @@ func New(cfg config.Config) (*Client, error) {
 		cfg.Transport,
 		hubrelay.WithPrincipal(principal),
 		hubrelay.WithBaseURL(cfg.HubRelayBaseURL),
+		hubrelay.WithGRPCTarget(cfg.HubRelayGRPCTarget),
 		hubrelay.WithSocketPath(cfg.HubRelaySocketPath),
 	)
 	if err != nil {
@@ -82,7 +83,7 @@ func (c *Client) Ask(ctx context.Context, prompt, model string) (hubrelay.Comman
 	})
 }
 
-func (c *Client) AskStream(ctx context.Context, prompt, model string) (*hubrelay.Stream, error) {
+func (c *Client) AskStream(ctx context.Context, prompt, model string) (hubrelay.ResultStream, error) {
 	args := map[string]string{
 		"prompt": prompt,
 	}

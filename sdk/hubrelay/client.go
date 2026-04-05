@@ -55,7 +55,11 @@ func NewClient(kind string, opts ...Option) (*Client, error) {
 	case "unix":
 		return NewUnixClient(cfg.socketPath, opts...), nil
 	case "grpc":
-		return nil, ErrTransportNotImplemented
+		transport, err := newGRPCTransport(cfg.grpcTarget, cfg)
+		if err != nil {
+			return nil, err
+		}
+		return &Client{transport: transport}, nil
 	default:
 		return nil, ErrUnsupportedTransport
 	}
@@ -84,16 +88,8 @@ func (c *Client) Execute(ctx context.Context, req CommandRequest) (CommandResult
 	return c.transport.Execute(ctx, req)
 }
 
-func (c *Client) ExecuteStream(ctx context.Context, req CommandRequest) (*Stream, error) {
-	stream, err := c.transport.ExecuteStream(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	typed, ok := stream.(*Stream)
-	if !ok {
-		return nil, ErrUnexpectedStreamType
-	}
-	return typed, nil
+func (c *Client) ExecuteStream(ctx context.Context, req CommandRequest) (ResultStream, error) {
+	return c.transport.ExecuteStream(ctx, req)
 }
 
 func (c *Client) EgressStatus(ctx context.Context, principal Principal) (EgressStatusResponse, error) {

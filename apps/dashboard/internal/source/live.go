@@ -119,7 +119,7 @@ func (s *Live) Audit(ctx context.Context, limit int) ([]AuditEntry, error) {
 }
 
 type liveAskStream struct {
-	stream *hubrelay.Stream
+	stream hubrelay.ResultStream
 }
 
 func (s *liveAskStream) Next() bool {

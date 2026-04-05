@@ -15,6 +15,8 @@ type CommandRequest struct {
 }
 
 type CommandResult struct {
+	Kind            string         `json:"kind,omitempty"`
+	Code            string         `json:"code,omitempty"`
 	Status          string         `json:"status"`
 	Message         string         `json:"message"`
 	Data            map[string]any `json:"data,omitempty"`

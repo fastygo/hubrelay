@@ -14,6 +14,7 @@ type Capability = contract.Capability
 
 const (
 	CapabilityAdapterHTTPChat    Capability = "adapter.http_chat"
+	CapabilityAdapterGRPC        Capability = "adapter.grpc"
 	CapabilityAdapterUnixSocket  Capability = "adapter.unix_socket"
 	CapabilityAdapterEmail       Capability = "adapter.email"
 	CapabilityPluginSystemInfo   Capability = "plugin.system.info"
@@ -25,6 +26,11 @@ const (
 )
 
 type HTTPChatConfig struct {
+	Enabled     bool
+	BindAddress string
+}
+
+type GRPCConfig struct {
 	Enabled     bool
 	BindAddress string
 }
@@ -75,6 +81,7 @@ type Profile struct {
 	Capabilities  []Capability
 	Config        map[string]string
 	HTTPChat      HTTPChatConfig
+	GRPC          GRPCConfig
 	UnixSocket    UnixSocketConfig
 	Email         EmailConfig
 	OpenAI        OpenAIConfig
@@ -87,6 +94,8 @@ var (
 	currentProfileID               = "tunnel-email-openai"
 	currentDisplayName             = "Tunnel chat + Yandex mail + OpenAI"
 	currentHTTPBind                = "127.0.0.1:5500"
+	currentGRPCEnabled             = "false"
+	currentGRPCBind                = "0.0.0.0:5501"
 	currentEmailEnabled            = "true"
 	currentEmailProvider           = "yandex"
 	currentEmailMode               = "scaffold"
@@ -157,6 +166,9 @@ func Current() Profile {
 	if currentHTTPBind != "" {
 		capabilities = append(capabilities, CapabilityAdapterHTTPChat)
 	}
+	if isTruthy(currentGRPCEnabled) && strings.TrimSpace(currentGRPCBind) != "" {
+		capabilities = append(capabilities, CapabilityAdapterGRPC)
+	}
 	if isTruthy(currentProxySession) {
 		capabilities = append(capabilities, CapabilityProxySession)
 	}
@@ -170,24 +182,26 @@ func Current() Profile {
 		DisplayName:  currentDisplayName,
 		Capabilities: capabilities,
 		Config: map[string]string{
-			"http_bind":                currentHTTPBind,
-			"email_enabled":            currentEmailEnabled,
-			"email_provider":           currentEmailProvider,
-			"email_mode":               currentEmailMode,
-			"unix_socket_enabled":      currentUnixSocketEnabled,
-			"unix_socket_path":         strings.TrimSpace(currentUnixSocketPath),
-			"ai_enabled":               currentOpenAIEnabled,
-			"ai_provider":              strings.TrimSpace(strings.ToLower(currentAIProvider)),
-			"ai_base_url":              strings.TrimSpace(currentAIBaseURL),
-			"ai_model":                 strings.TrimSpace(currentAIModel),
-			"ai_api_mode":              normalizeAIAPIMode(currentAIAPIMode),
-			"ai_has_api_key":           boolString(hasAIKey),
-			"chat_history":             currentChatHistory,
-			"proxy_session":            currentProxySession,
-			"proxy_force":              currentProxyForce,
-			"private_egress_required":  currentPrivateEgressRequired,
-			"private_egress_interface": strings.TrimSpace(currentPrivateEgressInterface),
-			"private_egress_test_host": strings.TrimSpace(currentPrivateEgressTestHost),
+			"http_bind":                  currentHTTPBind,
+			"grpc_enabled":               currentGRPCEnabled,
+			"grpc_bind":                  strings.TrimSpace(currentGRPCBind),
+			"email_enabled":              currentEmailEnabled,
+			"email_provider":             currentEmailProvider,
+			"email_mode":                 currentEmailMode,
+			"unix_socket_enabled":        currentUnixSocketEnabled,
+			"unix_socket_path":           strings.TrimSpace(currentUnixSocketPath),
+			"ai_enabled":                 currentOpenAIEnabled,
+			"ai_provider":                strings.TrimSpace(strings.ToLower(currentAIProvider)),
+			"ai_base_url":                strings.TrimSpace(currentAIBaseURL),
+			"ai_model":                   strings.TrimSpace(currentAIModel),
+			"ai_api_mode":                normalizeAIAPIMode(currentAIAPIMode),
+			"ai_has_api_key":             boolString(hasAIKey),
+			"chat_history":               currentChatHistory,
+			"proxy_session":              currentProxySession,
+			"proxy_force":                currentProxyForce,
+			"private_egress_required":    currentPrivateEgressRequired,
+			"private_egress_interface":   strings.TrimSpace(currentPrivateEgressInterface),
+			"private_egress_test_host":   strings.TrimSpace(currentPrivateEgressTestHost),
 			"private_egress_fail_closed": currentPrivateEgressFailClosed,
 			"egress_gateways":            currentEgressGateways,
 			"egress_check_interval":      currentEgressCheckInterval,
@@ -195,6 +209,10 @@ func Current() Profile {
 		HTTPChat: HTTPChatConfig{
 			Enabled:     currentHTTPBind != "",
 			BindAddress: currentHTTPBind,
+		},
+		GRPC: GRPCConfig{
+			Enabled:     isTruthy(currentGRPCEnabled),
+			BindAddress: strings.TrimSpace(currentGRPCBind),
 		},
 		UnixSocket: UnixSocketConfig{
 			Enabled:    isTruthy(currentUnixSocketEnabled),
@@ -248,6 +266,8 @@ func applyEnvOverrides() {
 		envOverrideAlways(&currentAIModel, "INPUT_AI_MODEL")
 		envOverrideAlways(&currentAIProvider, "INPUT_AI_PROVIDER")
 		envOverrideAlways(&currentAIAPIMode, "INPUT_AI_API_MODE")
+		envOverrideAlways(&currentGRPCEnabled, "INPUT_GRPC_ENABLED")
+		envOverrideAlways(&currentGRPCBind, "INPUT_GRPC_BIND")
 		envOverrideAlways(&currentProxyForce, "INPUT_PROXY_SESSION_FORCE")
 		envOverrideAlways(&currentProxySession, "INPUT_PROXY_SESSION_ENABLED")
 		envOverrideAlways(&currentUnixSocketEnabled, "INPUT_UNIX_SOCKET_ENABLED")

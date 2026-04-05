@@ -11,6 +11,7 @@ type clientConfig struct {
 	principal  Principal
 	baseURL    string
 	socketPath string
+	grpcTarget string
 }
 
 type Option func(*clientConfig)
@@ -46,6 +47,12 @@ func WithBaseURL(baseURL string) Option {
 func WithSocketPath(socketPath string) Option {
 	return func(cfg *clientConfig) {
 		cfg.socketPath = socketPath
+	}
+}
+
+func WithGRPCTarget(target string) Option {
+	return func(cfg *clientConfig) {
+		cfg.grpcTarget = target
 	}
 }
 

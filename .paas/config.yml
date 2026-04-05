@@ -10,6 +10,7 @@ defaults:
   INPUT_APP_SSH_USER: root
   INPUT_HUBRELAY_TRANSPORT: http
   INPUT_HUBRELAY_BASE_URL: http://127.0.0.1:5500
+  INPUT_HUBRELAY_GRPC_TARGET: 127.0.0.1:5501
   INPUT_HUBRELAY_SOCKET_PATH: /run/hubrelay/hubrelay.sock
   INPUT_APP_SERVICE_NAME: hubrelay-dashboard.service
   INPUT_APP_SYSTEM_USER: hubdash
@@ -32,6 +33,8 @@ defaults:
   INPUT_BOT_PROFILE_ID: tunnel-email-openai
   INPUT_BOT_DISPLAY_NAME: Tunnel chat + Yandex mail + OpenAI
   INPUT_BOT_HTTP_BIND: 0.0.0.0:5500
+  INPUT_GRPC_ENABLED: "false"
+  INPUT_GRPC_BIND: 0.0.0.0:5501
   INPUT_BOT_EMAIL_ENABLED: "true"
   INPUT_BOT_EMAIL_PROVIDER: yandex
   INPUT_BOT_EMAIL_MODE: scaffold

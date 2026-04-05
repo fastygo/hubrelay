@@ -1,34 +1,23 @@
-# HubRelay PAAS Deployment (Bot + Dashboard)
+# HubRelay PAAS Deployment
 
-Этот `.paas`-пакет сейчас поддерживает **2 основных сценария**:
+This `.paas` package supports two current deployment scenarios:
 
-- `deploy-hostrun` — деплой **бота** (runtime `/opt/hubrelay`, service `hubrelay.service`)
-- `deploy-app` — деплой **админки** (dashboard, runtime `/opt/hubrelay-dashboard`, service `hubrelay-dashboard.service`)
+- `deploy-hostrun` deploys the bot runtime to `/opt/hubrelay` as `hubrelay.service`
+- `deploy-app` deploys the dashboard runtime to `/opt/hubrelay-dashboard` as `hubrelay-dashboard.service`
 
-> Важно: обе команды используют `parse_config.sh`, поэтому файл
-> `.paas/parse_config.sh` должен быть в репозитории.
+Both flows depend on `.paas/parse_config.sh`. Keep that file in the repository.
 
----
+## Key files
 
-## Текущий набор ключевых файлов `.paas`
+- `config.yml` defines shared `INPUT_*` defaults
+- `extensions/deploy-hostrun.yml` deploys the bot binary and runtime env
+- `extensions/deploy-app.yml` deploys the dashboard binary and static assets
+- `deploy-hostrun-clean.sh` runs the bot deploy through `env -i`
+- `deploy-app-clean.sh` runs the dashboard deploy through `env -i`
 
-- `config.yml` (дефолтные `INPUT_*`)
-- `extensions/deploy-hostrun.yml`
-- `extensions/deploy-app.yml`
-- `deploy-hostrun-clean.sh`
-- `deploy-app-clean.sh`
-- `README.md` (этот файл)
+## Scenario 1: deploy the bot
 
-У вас должен быть:
-
-- `.paas/parse_config.sh` — **обязательный** (без него `deploy-*.sh` не выполняется)
-- пары ключей SSH в `~/.ssh` + пароль/выписки доступа к серверу
-
----
-
-## Сценарий 1: деплой только бота (`hubrelay.service`)
-
-Используйте, если нужен **только bot API**:
+Use this when you need the HubRelay bot API and optional gRPC adapter.
 
 ```bash
 export HUBRELAY_HOST='176.124.209.3'
@@ -39,17 +28,23 @@ export INPUT_AI_API_KEY='<OPENAI_API_KEY>'
 export INPUT_AI_BASE_URL='https://api.cerebras.ai/v1'
 export INPUT_AI_MODEL='gpt-oss-120b'
 
+# optional gRPC transport
+export INPUT_GRPC_ENABLED='true'
+export INPUT_GRPC_BIND='0.0.0.0:5501'
+
 bash ./.paas/deploy-hostrun-clean.sh
 ```
 
-Что делает скрипт:
+What the script does:
 
-- рендерит env для расширения `deploy-hostrun`
-- билдит и деплоит только `./cmd/bot` как `/opt/hubrelay/bot`
-- пересобирает `systemd` юнит `hubrelay.service`
-- перезапускает сервис и делает health/capabilities smoke
+- resolves `INPUT_*` through `parse_config.sh`
+- builds and uploads `./cmd/bot` to `/opt/hubrelay/bot`
+- refreshes `hubrelay.service`
+- verifies HTTP health on `INPUT_BOT_URL`
+- verifies the gRPC listener when `INPUT_GRPC_ENABLED=true`
+- runs a gRPC `system-info` smoke call through an SSH tunnel when gRPC is enabled
 
-Проверка после деплоя:
+Verify after deploy:
 
 ```bash
 ssh -i "$HUBRELAY_SSH_KEY" "${HUBRELAY_USER}@${HUBRELAY_HOST}"
@@ -60,43 +55,58 @@ curl -X POST http://127.0.0.1:5500/api/command \
   -d '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}'
 ```
 
-SSH доступ к API с вашей машины:
+SSH tunnel access from your workstation:
 
 ```bash
-ssh -N -L 5500:127.0.0.1:5500 -i "$HUBRELAY_SSH_KEY" "${HUBRELAY_USER}@${HUBRELAY_HOST}"
-# в браузере: http://127.0.0.1:5500
+ssh -N \
+  -L 5500:127.0.0.1:5500 \
+  -L 5501:127.0.0.1:5501 \
+  -i "$HUBRELAY_SSH_KEY" \
+  "${HUBRELAY_USER}@${HUBRELAY_HOST}"
 ```
 
----
+After the tunnel is open:
 
-## Сценарий 2: деплой админки (`hubrelay-dashboard.service`)
+- HTTP API is available at `http://127.0.0.1:5500`
+- gRPC target is available at `127.0.0.1:5501`
+- example gRPC smoke command: `go run ./cmd/grpc-system-info --target 127.0.0.1:5501`
 
-Нужно, чтобы работала веб-админка. Требует, чтобы бот уже был поднят и доступен на `127.0.0.1:5500`.
+## Scenario 2: deploy the dashboard
+
+Use this when you need the admin UI. The bot must already be deployed.
 
 ```bash
 export HUBRELAY_HOST='176.124.209.3'
 export HUBRELAY_USER='root'
 export HUBRELAY_SSH_KEY='C:/Users/alexe/.ssh/appserv'
 
-# переменные для dashboard-сценария
 export APP_HOST="$HUBRELAY_HOST"
 export APP_USER="$HUBRELAY_USER"
 export APP_SSH_KEY="$HUBRELAY_SSH_KEY"
 
 export INPUT_APP_ADMIN_PASS='<CHANGE_ME>'
 
+# choose one upstream mode
+export INPUT_HUBRELAY_TRANSPORT='http'
+export INPUT_HUBRELAY_BASE_URL='http://127.0.0.1:5500'
+
+# or
+# export INPUT_HUBRELAY_TRANSPORT='grpc'
+# export INPUT_HUBRELAY_GRPC_TARGET='127.0.0.1:5501'
+
 bash ./.paas/deploy-app-clean.sh
 ```
 
-Что делает скрипт:
+What the script does:
 
-- рендерит env для расширения `deploy-app`
-- собирает `apps/dashboard/cmd/server` локально (`dist/hubrelay-dashboard`)
-- загружает бинарник и static-ассеты на `SERVER_HOST`
-- рендерит и перезапускает `hubrelay-dashboard.service`
-- делает smoke-проверки `/login`, `/`, статических файлов и auth-эндпоинтов
+- builds `apps/dashboard/cmd/server` locally
+- uploads the dashboard binary and static assets
+- renders `dashboard.env`
+- restarts `hubrelay-dashboard.service`
+- verifies `/login`, root redirect, static assets, and authenticated pages
+- verifies the configured HubRelay upstream path for `http`, `grpc`, or `unix`
 
-Проверка после деплоя:
+Verify after deploy:
 
 ```bash
 ssh -i "$APP_SSH_KEY" "${APP_USER}@${APP_HOST}"
@@ -106,17 +116,17 @@ curl -sS -u "${INPUT_APP_ADMIN_USER:-admin}:${INPUT_APP_ADMIN_PASS}" \
   http://127.0.0.1:8080/capabilities
 ```
 
-SSH-доступ в админку:
+SSH tunnel access to the dashboard:
 
 ```bash
 ssh -N -L 18080:127.0.0.1:8080 -i "$APP_SSH_KEY" "${APP_USER}@${APP_HOST}"
-# в браузере: http://127.0.0.1:18080/login
 ```
 
----
+Then open `http://127.0.0.1:18080/login`.
 
-## Что важно помнить
+## Important notes
 
-- `deploy-hostrun` и `deploy-app` — независимые процессы и разные артефакты.
-- Убеждайтесь, что пароль `INPUT_APP_ADMIN_PASS` всегда задаётся через env (не хранить в git).
-- Если у вас есть `WG`, можно оставить расширение `deploy-hostrun` с WG-настройками; если WG не нужен, оставьте `INPUT_BOT_APP_WG_ENABLED=false` (по умолчанию в скрипте).
+- `deploy-hostrun` and `deploy-app` are independent deploy flows with different artifacts
+- keep `INPUT_APP_ADMIN_PASS` outside git and pass it only through env
+- when WireGuard is not needed, keep `INPUT_BOT_APP_WG_ENABLED=false`
+- gRPC is optional for the bot, but when enabled it should be tunnelled the same way as HTTP for private access

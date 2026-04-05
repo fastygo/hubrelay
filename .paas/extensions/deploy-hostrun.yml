@@ -23,6 +23,14 @@ inputs:
     label: HTTP bind address
     type: text
     default: 0.0.0.0:5500
+  - name: grpc_enabled
+    label: Enable gRPC adapter
+    type: text
+    default: "false"
+  - name: grpc_bind
+    label: gRPC bind address
+    type: text
+    default: 0.0.0.0:5501
   - name: bot_email_enabled
     label: Enable email adapter capability
     type: text
@@ -282,6 +290,8 @@ steps:
       LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentProfileID=${INPUT_BOT_PROFILE_ID}"
       LDFLAGS="$LDFLAGS -X 'sshbot/internal/buildprofile.currentDisplayName=${INPUT_BOT_DISPLAY_NAME}'"
       LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentHTTPBind=${INPUT_BOT_HTTP_BIND}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentGRPCEnabled=${INPUT_GRPC_ENABLED}"
+      LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentGRPCBind=${INPUT_GRPC_BIND}"
       LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentEmailEnabled=${INPUT_BOT_EMAIL_ENABLED}"
       LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentEmailProvider=${INPUT_BOT_EMAIL_PROVIDER}"
       LDFLAGS="$LDFLAGS -X sshbot/internal/buildprofile.currentEmailMode=${INPUT_BOT_EMAIL_MODE}"
@@ -417,6 +427,33 @@ steps:
       exit 1
     description: "Verify bot health"
 
+  - id: verify_grpc_listener
+    env:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    run: |
+      set -eu
+      if [ "${INPUT_GRPC_ENABLED}" != "true" ]; then
+        exit 0
+      fi
+      grpc_host="${INPUT_GRPC_BIND%:*}"
+      grpc_port="${INPUT_GRPC_BIND##*:}"
+      if [ -z "${grpc_host}" ] || [ "${grpc_host}" = "${grpc_port}" ]; then
+        echo "Invalid INPUT_GRPC_BIND: ${INPUT_GRPC_BIND}"
+        exit 1
+      fi
+      if [ "${grpc_host}" = "0.0.0.0" ]; then
+        grpc_host="127.0.0.1"
+      fi
+      for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        if bash -lc "exec 3<>/dev/tcp/${grpc_host}/${grpc_port}" 2>/dev/null; then
+          exit 0
+        fi
+        sleep 5
+      done
+      echo "gRPC adapter did not become ready at ${INPUT_GRPC_BIND}"
+      exit 1
+    description: "Verify gRPC listener"
+
   - id: verify_app_ingress_stack
     env:
       PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -443,12 +480,34 @@ steps:
         --data '{"principal_id":"operator-local","roles":["operator"],"command":"capabilities"}' >/dev/null
     description: "Run capabilities smoke command"
 
+  - id: smoke_grpc_system_info
+    run: |
+      set -eu
+      if [ "${INPUT_GRPC_ENABLED}" != "true" ]; then
+        exit 0
+      fi
+      grpc_port="${INPUT_GRPC_BIND##*:}"
+      tunnel_port="15501"
+      ssh -N -L "${tunnel_port}:127.0.0.1:${grpc_port}" "${SERVER_USER}@${SERVER_HOST}" &
+      tunnel_pid=$!
+      cleanup() {
+        kill "${tunnel_pid}" 2>/dev/null || true
+      }
+      trap cleanup EXIT
+      sleep 2
+      go run ./cmd/grpc-system-info --target "127.0.0.1:${tunnel_port}" >/dev/null
+    description: "Run gRPC system-info smoke"
+    local: true
+
   - id: print_runtime_info
     run: |
       set -eu
       echo "Binary: /opt/hubrelay/bot (sha: ${STEP_GIT_SHA})"
       echo "Service: hubrelay.service (host-run)"
       echo "Loopback URL: ${INPUT_BOT_URL}"
+      if [ "${INPUT_GRPC_ENABLED}" = "true" ]; then
+        echo "gRPC target: ${SERVER_HOST}:${INPUT_GRPC_BIND##*:}"
+      fi
       if [ "${INPUT_BOT_APP_WG_ENABLED}" = "true" ]; then
         app_ip="$(printf '%s\n' "${INPUT_BOT_APP_WG_ADDRESS}" | cut -d/ -f1)"
         public_key="$(ssh ${SERVER_USER}@${SERVER_HOST} "cat /etc/wireguard/${INPUT_BOT_APP_WG_INTERFACE}.pub" 2>/dev/null || true)"
@@ -456,7 +515,7 @@ steps:
         echo "Dashboard WireGuard endpoint: ${SERVER_HOST}:${INPUT_BOT_APP_WG_LISTEN_PORT}/udp"
         echo "Dashboard WireGuard public key: ${public_key}"
       fi
-      echo "SSH tunnel: ssh -L 5500:127.0.0.1:5500 root@${SERVER_HOST}"
+      echo "SSH tunnel: ssh -L 5500:127.0.0.1:5500 -L 5501:127.0.0.1:5501 root@${SERVER_HOST}"
     description: "Print runtime information"
     local: true
 

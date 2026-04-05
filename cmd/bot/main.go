@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"sshbot/internal/adapters/email"
+	"sshbot/internal/adapters/grpcapi"
 	"sshbot/internal/adapters/httpchat"
 	"sshbot/internal/adapters/unixsock"
 	"sshbot/internal/ai"
@@ -120,6 +121,9 @@ func main() {
 	adapters := make([]core.Adapter, 0, 2)
 	if profile.HTTPChat.Enabled {
 		adapters = append(adapters, httpchat.New(profile.HTTPChat.BindAddress, service, proxyManager))
+	}
+	if profile.GRPC.Enabled && profile.GRPC.BindAddress != "" {
+		adapters = append(adapters, grpcapi.New(profile.GRPC.BindAddress, service, proxyManager))
 	}
 	if profile.UnixSocket.Enabled && profile.UnixSocket.SocketPath != "" {
 		adapters = append(adapters, unixsock.New(profile.UnixSocket.SocketPath, service, proxyManager))

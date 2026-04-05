@@ -56,16 +56,17 @@ flowchart TD
 The command contract is transport-agnostic. The same command contract should be exposed through multiple transports:
 
 - HTTP JSON is the base transport (`/api/command`, `/api/command/stream`) and stays supported for compatibility.
-- gRPC is the planned service transport for BFF/gateway clients that need typed streaming and stricter contracts.
+- gRPC is now available as a parallel service transport for BFF/gateway clients that need multiplexed connections and server-streaming without changing the core command contract.
 - Unix socket remains for local, privileged control-plane integrations.
 
 In `apps/dashboard`, transport selection is handled in the SDK/source layer:
 
 - `sdk/hubrelay` now exposes a transport facade (`CommandTransport`) instead of wiring HTTP paths directly in app code.
 - `apps/dashboard/internal/relay` now selects the SDK client by transport config instead of hardcoding HTTP vs Unix constructor branches.
+- The current gRPC implementation uses a JSON codec over gRPC service methods, so there is no protobuf generation step in the current build pipeline.
 - `apps/dashboard/internal/source` consumes the same methods (`Health`, `Capabilities`, `Ask`, `AskStream`, `Egress`, `Audit`) independent of transport.
 - Browser widgets should consume pointwise endpoints; no full-page websocket conversion is required for this direction.
-- Existing UI streaming can still be done via SSE while the backend transport for dashboard internals can switch to gRPC later.
+- Existing UI streaming still runs via SSE while the backend transport for dashboard internals can switch to gRPC by config.
 
 Runtime composition also moved one level up:
 
@@ -76,7 +77,7 @@ Runtime composition also moved one level up:
 Decision matrix:
 
 - Choose HTTP when compatibility, simplicity, or external tooling parity is the priority.
-- Choose gRPC when strict contracts, typed payloads, and server-stream usage for dashboard micro-flows are required.
+- Choose gRPC when service-to-service streaming, one long-lived connection, or dashboard/backend calls over SSH tunnel are required.
 
 ## Outbound Rule
 - workload outbound policy must live above individual plugins,
